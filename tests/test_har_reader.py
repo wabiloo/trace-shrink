@@ -157,11 +157,12 @@ def test_har_entry_properties_from_reader(har_reader: HarReader):
     assert entry.response.mime_type == "application/x-mpegURL"
 
     # Check timings: allow for None (if timing value was -1 in HAR)
-    wait_time = entry.timings.wait
-    assert wait_time is None or wait_time >= 0
+    start_time = entry.timings.request_start
+    assert start_time is not None
 
-    receive_time = entry.timings.receive
-    assert receive_time is None or receive_time >= 0  # Relaxed assertion
+    response_end = entry.timings.response_end
+    assert response_end is not None
+    assert response_end > start_time
 
     # Check body (should be HLS content)
     body_text = entry.response.body.text

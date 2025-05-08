@@ -1,5 +1,4 @@
 import json
-import os
 import zipfile
 from pathlib import Path
 
@@ -229,7 +228,7 @@ def test_get_entry_success(dummy_log_file):
 
     assert entry_obj is not None
     assert isinstance(entry_obj, ProxymanLogV2Entry)
-    assert entry_obj.entry_filename == "request_1_file-id-456"
+    assert entry_obj._entry_name == "request_1_file-id-456"
     # ProxymanLogV2Entry.id uses the 'id' from JSON content if available
     assert entry_obj.id == "456"
     assert str(entry_obj.request.url) == "https://another.org/path2?q=abc"
@@ -376,9 +375,8 @@ def test_iter_method(dummy_log_file):
         assert isinstance(entry, ProxymanLogV2Entry)
 
 
-# --- Test with Real Log File (adapted) ---
+# --- Test with Real Log File  ---
 
-# Use the archive file provided in tests/archives
 REAL_LOG_FILE_PATH = (
     Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
 )

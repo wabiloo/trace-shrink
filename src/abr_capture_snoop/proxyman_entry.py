@@ -1,5 +1,6 @@
 import base64
 import json
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from yarl import URL
@@ -213,28 +214,22 @@ class _ProxymanResponseDetails(ResponseDetails):
 class _ProxymanTimingsDetails(TimingsDetails):
     def __init__(self, entry_data: Dict[str, Any]):
         self._data = entry_data.get("timing", {})
-        # TODO: Parse Proxyman specific timings (e.g., 'connectStartDate', 'startDate', 'endDate')
-        # And convert them to a common format, handling timezones.
-        # Proxyman times are often ISO 8601 strings with timezone info (e.g., "2023-10-26T10:30:45.123Z")
-        # Example timing fields from Proxyman JSON:
-        # "connectEndDate": "2024-05-14T09:38:56.714Z",
-        # "connectStartDate": "2024-05-14T09:38:56.674Z",
-        # "endDate": "2024-05-14T09:38:56.778Z",
-        # "proxyEndDate": "2024-05-14T09:38:56.778Z",
-        # "proxyStartDate": "2024-05-14T09:38:56.673Z",
-        # "receiveHeaderEndDate": "2024-05-14T09:38:56.777Z",
-        # "receiveHeaderStartDate": "2024-05-14T09:38:56.777Z",
-        # "sendRequestEndDate": "2024-05-14T09:38:56.715Z",
-        # "sendRequestStartDate": "2024-05-14T09:38:56.715Z",
-        # "sslEndDate": "2024-05-14T09:38:56.713Z",
-        # "sslStartDate": "2024-05-14T09:38:56.686Z",
-        # "startDate": "2024-05-14T09:38:56.673Z"
-        # For now, this is a placeholder.
 
-    # Example properties (to be implemented based on ABC if defined there)
-    # @property
-    # def connect_duration(self) -> Optional[float]: ...
-    pass
+    @property
+    def request_start(self) -> Optional[datetime]:
+        return datetime.fromtimestamp(self._data.get("requestStartedAt", 0))
+
+    @property
+    def request_end(self) -> Optional[datetime]:
+        return datetime.fromtimestamp(self._data.get("requestEndedAt", 0))
+
+    @property
+    def response_start(self) -> Optional[datetime]:
+        return datetime.fromtimestamp(self._data.get("responseStartedAt", 0))
+
+    @property
+    def response_end(self) -> Optional[datetime]:
+        return datetime.fromtimestamp(self._data.get("responseEndedAt", 0))
 
 
 class ProxymanLogV2Entry(CaptureEntry):
@@ -341,11 +336,6 @@ class ProxymanLogV2Entry(CaptureEntry):
     def get_raw_json(self) -> Dict[str, Any]:
         """Returns the original raw JSON data for this entry."""
         return self._raw_data
-
-    @property
-    def entry_filename(self) -> str:
-        """The internal filename from the Proxyman archive (e.g., request_0_123xyz)."""
-        return self._entry_name
 
     def __str__(self) -> str:
         method = self.request.method

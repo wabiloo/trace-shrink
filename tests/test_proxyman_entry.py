@@ -108,7 +108,7 @@ def invalid_body_entry():
 
 def test_init(sample_entry):
     assert sample_entry._raw_data == SAMPLE_ENTRY_DATA
-    assert sample_entry.entry_filename == "request_0_test-id-86"
+    assert sample_entry._entry_name == "request_0_test-id-86"
     assert sample_entry._reader is None  # For this test setup
 
 
@@ -283,8 +283,6 @@ def test_get_raw_json(sample_entry):
     assert sample_entry.get_raw_json() == SAMPLE_ENTRY_DATA
 
 
-def test_entry_filename_property(sample_entry):
-    assert sample_entry.entry_filename == "request_0_test-id-86"
 
 
 def test_str_repr(sample_entry):

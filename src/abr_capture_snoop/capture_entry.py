@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, Dict, Optional, Union  # Add yarl.URL later
 
-# from yarl import URL # Will uncomment once yarl is used
+import yarl
 
 
 class RequestDetails(ABC):
     @property
     @abstractmethod
-    def url(self) -> Any:  # yarl.URL:
+    def url(self) -> yarl.URL:
         pass
 
     @property
@@ -18,11 +19,6 @@ class RequestDetails(ABC):
     @property
     @abstractmethod
     def method(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def body(self) -> Optional[bytes]:  # Or stream, or helper methods
         pass
 
 
@@ -71,10 +67,25 @@ class ResponseDetails(ABC):
 
 
 class TimingsDetails(ABC):
-    # Define specific timing properties later based on commonalities
-    # e.g., connect_time, send_time, wait_time, receive_time
-    # Need to consider timezone handling
-    pass
+    @property
+    @abstractmethod
+    def request_start(self) -> Optional[datetime]:
+        pass
+
+    @property
+    @abstractmethod
+    def request_end(self) -> Optional[datetime]:
+        pass
+
+    @property
+    @abstractmethod
+    def response_start(self) -> Optional[datetime]:
+        pass
+
+    @property
+    @abstractmethod
+    def response_end(self) -> Optional[datetime]:
+        pass
 
 
 class CaptureEntry(ABC):

@@ -187,21 +187,6 @@ class TestCrossFormatConsistency:
                 f"Response header '{key}' mismatch (chrome vs proxyman Log)"
             )
 
-    def test_request_body_consistency(
-        self, chrome_har_entry, proxyman_har_entry, proxyman_log_entry
-    ):
-        """Compare the request body."""
-        # The provided example proxyman_entry.json has an empty request bodyData.
-        # HAR entries also represent this as absent or empty.
-        chrome_req_body = chrome_har_entry.request.body
-        proxyman_har_req_body = proxyman_har_entry.request.body
-        proxyman_log_req_body = proxyman_log_entry.request.body
-
-        # Assert all are None or empty bytes
-        assert chrome_req_body is None or chrome_req_body == b""
-        assert proxyman_har_req_body is None or proxyman_har_req_body == b""
-        assert proxyman_log_req_body is None or proxyman_log_req_body == b""
-
     def test_response_body_text_consistency(
         self, chrome_har_entry, proxyman_har_entry, proxyman_log_entry
     ):

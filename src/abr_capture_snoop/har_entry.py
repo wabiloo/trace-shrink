@@ -1,6 +1,6 @@
 # src/abr_capture_snoop/har_entry.py
 import base64
-import json  # For parsing postData.text if it's JSON
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 from yarl import URL
@@ -46,40 +46,6 @@ class _HarRequestDetails(RequestDetails):
     @property
     def method(self) -> str:
         return self._data.get("method", "GET").upper()
-
-    @property
-    def body(self) -> Optional[bytes]:
-        post_data = self._data.get("postData")
-        if not post_data or "text" not in post_data:
-            return None
-
-        text_content = post_data["text"]
-        mime_type = post_data.get("mimeType", "").lower()
-        # HAR spec doesn't have a standard 'encoding' field for postData like for response content.
-        # It's usually implied by mimeType or assumed to be utf-8 for text.
-        # If mime_type explicitly says it's base64, that would be non-standard but possible.
-
-        if isinstance(text_content, str):
-            # Determine encoding from mimeType if charset is present
-            body_encoding = "utf-8"  # Default
-            if "charset=" in mime_type:
-                try:
-                    body_encoding = (
-                        mime_type.split("charset=")[-1].split(";")[0].strip()
-                    )
-                except IndexError:
-                    pass  # Stick to default
-            try:
-                return text_content.encode(body_encoding)
-            except (LookupError, UnicodeEncodeError):
-                try:  # Fallback
-                    return text_content.encode("utf-8", errors="replace")
-                except Exception:
-                    return None
-        # Although less common for postData.text to be pre-encoded bytes in JSON, handle if it is.
-        elif isinstance(text_content, bytes):
-            return text_content
-        return None
 
 
 class _HarResponseBodyDetails(ResponseBodyDetails):
@@ -255,67 +221,32 @@ class _HarResponseDetails(ResponseDetails):
 
 
 class _HarTimingsDetails(TimingsDetails):
-    def __init__(self, har_entry_timings_data: Dict[str, Any]):
-        self._data = har_entry_timings_data
+    def __init__(self, started_date_time: str, duration_ms: float):
+        self._started_date_time = started_date_time
+        self._duration_ms = duration_ms
 
-    def _get_timing_in_seconds(self, key: str) -> Optional[float]:
-        value = self._data.get(key, -1)
-        if isinstance(value, (int, float)) and value >= 0:
-            return value / 1000.0  # Convert ms to seconds
+    @property
+    def request_start(self) -> Optional[datetime]:
+        if self._started_date_time:
+            try:
+                return datetime.fromisoformat(self._started_date_time)
+            except ValueError:
+                return None
         return None
 
     @property
-    def blocked(self) -> Optional[float]:
-        return self._get_timing_in_seconds("blocked")
+    def request_end(self) -> Optional[datetime]:
+        raise NotImplementedError("Not implemented - not available in HAR")
 
     @property
-    def dns(self) -> Optional[float]:
-        return self._get_timing_in_seconds("dns")
+    def response_start(self) -> Optional[datetime]:
+        raise NotImplementedError("Not implemented - not available in HAR")
 
     @property
-    def connect(self) -> Optional[float]:
-        return self._get_timing_in_seconds("connect")
-
-    @property
-    def ssl(self) -> Optional[float]:
-        return self._get_timing_in_seconds("ssl")
-
-    @property
-    def send(self) -> Optional[float]:
-        return self._get_timing_in_seconds("send")
-
-    @property
-    def wait(self) -> Optional[float]:
-        return self._get_timing_in_seconds("wait")
-
-    @property
-    def receive(self) -> Optional[float]:
-        return self._get_timing_in_seconds("receive")
-
-    @property
-    def total_time(self) -> Optional[float]:
-        # HAR entry.time is the total time for the entry in ms.
-        # Not part of the 'timings' sub-object usually, but related.
-        # This should ideally be taken from the parent HarEntry's .time property.
-        # For now, this class only sees the timings sub-object.
-        # Fallback: sum of components if available and entry.time is not used directly.
-        if (
-            self._parent_entry
-            and hasattr(self._parent_entry, "time")
-            and self._parent_entry.time is not None
-        ):
-            return self._parent_entry.time / 1000.0
-
-        components = [
-            self.blocked,
-            self.dns,
-            self.connect,
-            self.send,
-            self.wait,
-            self.receive,
-        ]
-        valid_components = [c for c in components if c is not None]
-        return sum(valid_components) if valid_components else None
+    def response_end(self) -> Optional[datetime]:
+        if self._started_date_time and self._duration_ms:
+            return self.request_start + timedelta(milliseconds=self._duration_ms)
+        return None
 
 
 class HarEntry(CaptureEntry):
@@ -332,8 +263,8 @@ class HarEntry(CaptureEntry):
         )
         # Pass self to _HarTimingsDetails if it needs to access parent HarEntry.time
         self._timing_details = _HarTimingsDetails(
-            self._raw_data.get("timings", {}),
-            self if hasattr(_HarTimingsDetails, "total_time") else None,
+            self._raw_data.get("startedDateTime", ""),
+            self._raw_data.get("time", 0),
         )
 
     @property
@@ -368,10 +299,6 @@ class HarEntry(CaptureEntry):
         return self._raw_data
 
     @property
-    def started_date_time(self) -> str:
-        return self._raw_data.get("startedDateTime", "")
-
-    @property
     def time(
         self,
     ) -> Optional[float]:  # Total time for the entry in milliseconds from HAR spec
@@ -383,12 +310,3 @@ class HarEntry(CaptureEntry):
 
     def __repr__(self) -> str:
         return f"<HarEntry id={self.id} url={str(self.request.url)}>"
-
-
-# Need to update _HarTimingsDetails constructor if it takes parent_entry
-_HarTimingsDetails.__init__ = (
-    lambda self, har_entry_timings_data, parent_entry=None: setattr(
-        self, "_data", har_entry_timings_data
-    )
-    or setattr(self, "_parent_entry", parent_entry)
-)

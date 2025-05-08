@@ -110,23 +110,6 @@ def test_har_request_headers(sample_har_entry):
     assert headers["Host"] == "api.example.com"
 
 
-def test_har_request_body(sample_har_entry):
-    """Test request body parsing."""
-    body = sample_har_entry.request.body
-    assert isinstance(body, bytes)
-    # Checks the simple utf-8 encoding of postData.text
-    assert body == b'{"key": "some data"}'
-
-
-def test_har_request_body_missing(sample_har_entry):
-    """Test request body when postData is missing."""
-    data_no_post = HAR_ENTRY_DICT_SAMPLE.copy()
-    data_no_post["request"] = data_no_post["request"].copy()
-    del data_no_post["request"]["postData"]
-    entry_no_post = HarEntry(data_no_post, reader=None, entry_index=1)
-    assert entry_no_post.request.body is None
-
-
 # --- Response Properties ---
 def test_har_response_status_code(sample_har_entry):
     """Test response status code."""
@@ -197,13 +180,8 @@ def test_har_response_body_no_text(sample_har_entry):
 def test_har_timings(sample_har_entry):
     """Test parsing of timing values."""
     timings = sample_har_entry.timings
-    assert timings.blocked == pytest.approx(0.0101)  # 10.1 ms
-    assert timings.dns is None  # -1 in HAR
-    assert timings.connect == pytest.approx(0.0255)  # 25.5 ms
-    assert timings.ssl == pytest.approx(0.0150)  # 15.0 ms
-    assert timings.send == pytest.approx(0.0202)  # 20.2 ms
-    assert timings.wait == pytest.approx(0.0503)  # 50.3 ms
-    assert timings.receive == pytest.approx(0.0444)  # 44.4 ms
+    assert timings.request_start is not None
+    assert timings.response_end is not None
 
 
 def test_har_total_time_from_entry(sample_har_entry):
@@ -218,11 +196,6 @@ def test_har_total_time_from_entry(sample_har_entry):
 def test_har_comment(sample_har_entry):
     """Test comment property."""
     assert sample_har_entry.comment == "This is a test HAR entry."
-
-
-def test_har_started_date_time(sample_har_entry):
-    """Test startedDateTime property."""
-    assert sample_har_entry.started_date_time == "2024-05-15T12:00:00.123Z"
 
 
 def test_har_get_raw_json(sample_har_entry):
