@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This repository contains a Python package, which will be used by video streaming engineers to help them analyse, validate and use captures of HTTP network traffic, typically from video players playing HLS and DASH content. 
+It will support the ability to read from HAR files (.har) and from Proxyman Log v2 files (.proxymanlogv2).
+
+The tool will offer a consistent API to be able to read and index those files, and retrieve information from them, especially DASH manifests and HLS playlists, and calls to media segments. 

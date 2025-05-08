@@ -1,0 +1,22 @@
+[project]
+name = "abr-capture-snoop"
+version = "0.1.0"
+description = "A tool to analyze captures of ABR streams (HAR or Proxyman)."
+authors = [{ name = "Fabre Lambeau", email = "fabre.lambeau@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "m3u8>=6.0.0",
+    "yarl>=1.9.0", # For robust URL parsing and manipulation
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0", # Use a recent version of pytest
+]
+
+[tool.uv]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

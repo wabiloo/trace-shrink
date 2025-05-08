@@ -1,0 +1,544 @@
+{
+    "_connectionId": "86987",
+    "_initiator": {
+        "type": "script",
+        "stack": {
+            "callFrames": [
+                {
+                    "functionName": "",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 231878
+                },
+                {
+                    "functionName": "v",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 62550
+                },
+                {
+                    "functionName": "N.Vi",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 40161
+                },
+                {
+                    "functionName": "N.qi",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 40749
+                },
+                {
+                    "functionName": "N.Gi",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 41222
+                },
+                {
+                    "functionName": "N.G",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 42106
+                },
+                {
+                    "functionName": "l",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 1998
+                },
+                {
+                    "functionName": "d",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 1937
+                },
+                {
+                    "functionName": "h.F",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 3182
+                },
+                {
+                    "functionName": "drainQueues",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 1763
+                },
+                {
+                    "functionName": "B",
+                    "scriptId": "125",
+                    "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                    "lineNumber": 38,
+                    "columnNumber": 67385
+                }
+            ],
+            "parent": {
+                "description": "Promise.then",
+                "callFrames": [
+                    {
+                        "functionName": "s",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 53377
+                    },
+                    {
+                        "functionName": "Qr",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 67342
+                    },
+                    {
+                        "functionName": "h.H",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 3271
+                    },
+                    {
+                        "functionName": "c",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1865
+                    },
+                    {
+                        "functionName": "u.hasDevTools.h.invoke",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 2940
+                    },
+                    {
+                        "functionName": "_.Hn",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 27620
+                    },
+                    {
+                        "functionName": "_.Wn",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 26729
+                    },
+                    {
+                        "functionName": "",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 28201
+                    },
+                    {
+                        "functionName": "",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 779195
+                    },
+                    {
+                        "functionName": "n.D$",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 778602
+                    },
+                    {
+                        "functionName": "get",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 779431
+                    },
+                    {
+                        "functionName": "n",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1138818
+                    },
+                    {
+                        "functionName": "i.GD",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1141210
+                    },
+                    {
+                        "functionName": "i.eCt",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1196018
+                    },
+                    {
+                        "functionName": "i.YCt",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1203289
+                    },
+                    {
+                        "functionName": "n.dispatchEvent",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1045676
+                    },
+                    {
+                        "functionName": "e.load",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1247832
+                    },
+                    {
+                        "functionName": "Rt",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1289497
+                    },
+                    {
+                        "functionName": "At",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1289029
+                    },
+                    {
+                        "functionName": "t",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1289139
+                    },
+                    {
+                        "functionName": "It",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1289996
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1306045
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 383738
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 454377
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 456754
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 454377
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 458336
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 270576
+                    },
+                    {
+                        "functionName": "i.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 470360
+                    },
+                    {
+                        "functionName": "r.qk",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 481675
+                    },
+                    {
+                        "functionName": "r.kU",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 481721
+                    },
+                    {
+                        "functionName": "play",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 485036
+                    },
+                    {
+                        "functionName": "i.play",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1556194
+                    },
+                    {
+                        "functionName": "n.QUt",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1421858
+                    },
+                    {
+                        "functionName": "n.play",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1422326
+                    },
+                    {
+                        "functionName": "n.handleClick",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1320169
+                    },
+                    {
+                        "functionName": "e",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1519691
+                    },
+                    {
+                        "functionName": "r.dispatcher.r.dispatcher",
+                        "scriptId": "125",
+                        "url": "https://cdn.myth.theoplayer.com/38e51424-f1da-4bd3-b26b-65f52f286aeb/THEOplayer.js",
+                        "lineNumber": 38,
+                        "columnNumber": 1518960
+                    }
+                ]
+            }
+        }
+    },
+    "_priority": "High",
+    "_resourceType": "fetch",
+    "cache": {},
+    "connection": "9090",
+    "pageref": "page_1",
+    "request": {
+        "method": "GET",
+        "url": "https://stream.broadpeak.io/hls/live/2003678/ndtv24x7/master.m3u8?bpkio_sessionid=10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2&bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&category=all",
+        "httpVersion": "HTTP/1.1",
+        "headers": [
+            {
+                "name": "Accept",
+                "value": "*/*"
+            },
+            {
+                "name": "Accept-Encoding",
+                "value": "gzip, deflate, br, zstd"
+            },
+            {
+                "name": "Accept-Language",
+                "value": "en-US,en;q=0.9"
+            },
+            {
+                "name": "Cache-Control",
+                "value": "no-cache"
+            },
+            {
+                "name": "Connection",
+                "value": "keep-alive"
+            },
+            {
+                "name": "DNT",
+                "value": "1"
+            },
+            {
+                "name": "Host",
+                "value": "stream.broadpeak.io"
+            },
+            {
+                "name": "Origin",
+                "value": "https://app.broadpeak.io"
+            },
+            {
+                "name": "Pragma",
+                "value": "no-cache"
+            },
+            {
+                "name": "Referer",
+                "value": "https://app.broadpeak.io/"
+            },
+            {
+                "name": "Sec-Fetch-Dest",
+                "value": "empty"
+            },
+            {
+                "name": "Sec-Fetch-Mode",
+                "value": "cors"
+            },
+            {
+                "name": "Sec-Fetch-Site",
+                "value": "same-site"
+            },
+            {
+                "name": "User-Agent",
+                "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+            },
+            {
+                "name": "sec-ch-ua",
+                "value": "\"Not.A/Brand\";v=\"99\", \"Chromium\";v=\"136\""
+            },
+            {
+                "name": "sec-ch-ua-mobile",
+                "value": "?0"
+            },
+            {
+                "name": "sec-ch-ua-platform",
+                "value": "\"macOS\""
+            }
+        ],
+        "queryString": [
+            {
+                "name": "bpkio_sessionid",
+                "value": "10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2"
+            },
+            {
+                "name": "bpkio_serviceid",
+                "value": "300d1539c3b6aa17a79a8fd9f1e45448"
+            },
+            {
+                "name": "category",
+                "value": "all"
+            }
+        ],
+        "cookies": [],
+        "headersSize": 745,
+        "bodySize": 0
+    },
+    "response": {
+        "status": 200,
+        "statusText": "OK",
+        "httpVersion": "HTTP/1.1",
+        "headers": [
+            {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, HEAD"
+            },
+            {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://app.broadpeak.io"
+            },
+            {
+                "name": "Cache-Control",
+                "value": "no-store"
+            },
+            {
+                "name": "Connection",
+                "value": "keep-alive"
+            },
+            {
+                "name": "Content-Length",
+                "value": "1363"
+            },
+            {
+                "name": "Content-Type",
+                "value": "application/vnd.apple.mpegurl"
+            },
+            {
+                "name": "Date",
+                "value": "Wed, 07 May 2025 15:08:50 GMT"
+            },
+            {
+                "name": "Vary",
+                "value": "Accept-Encoding"
+            },
+            {
+                "name": "Via",
+                "value": "1.1 d0aa9598a65ac1fc1db7782598afed26.cloudfront.net (CloudFront)"
+            },
+            {
+                "name": "X-Amz-Cf-Id",
+                "value": "yWYg_VG_3gEOWwlLKAX_nDmKUNOvrNS5fK-G07xo2BFzfmwWVZQJug=="
+            },
+            {
+                "name": "X-Amz-Cf-Pop",
+                "value": "LHR5-P5"
+            },
+            {
+                "name": "X-Cache",
+                "value": "Miss from cloudfront"
+            },
+            {
+                "name": "region_id",
+                "value": "dfcc3ff446"
+            }
+        ],
+        "cookies": [],
+        "content": {
+            "size": 1363,
+            "mimeType": "application/vnd.apple.mpegurl",
+            "compression": 0,
+            "text": "#EXTM3U\n#EXT-X-VERSION:4\n#EXT-X-INDEPENDENT-SEGMENTS\n\n# media\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"program_audio\",LANGUAGE=\"eng\",NAME=\"Default Audio\",AUTOSELECT=YES,DEFAULT=YES\n\n# variants\n#EXT-X-STREAM-INF:BANDWIDTH=1097800,AVERAGE-BANDWIDTH=965800,CODECS=\"avc1.4d4029,mp4a.40.2\",RESOLUTION=640x360,FRAME-RATE=25,AUDIO=\"program_audio\"\nmasterp_360p@1.m3u8?bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&bpkio_sessionid=10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2&category=all&mm_sp\n#EXT-X-STREAM-INF:BANDWIDTH=1416800,AVERAGE-BANDWIDTH=1240800,CODECS=\"avc1.4d4029,mp4a.40.2\",RESOLUTION=854x480,FRAME-RATE=25,AUDIO=\"program_audio\"\nmasterp_480p@2.m3u8?bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&bpkio_sessionid=10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2&category=all&mm_sp\n#EXT-X-STREAM-INF:BANDWIDTH=3330800,AVERAGE-BANDWIDTH=2890800,CODECS=\"avc1.4d4029,mp4a.40.2\",RESOLUTION=1280x720,FRAME-RATE=25,AUDIO=\"program_audio\"\nmasterp_720p@3.m3u8?bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&bpkio_sessionid=10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2&category=all&mm_sp\n\n# media\n#EXT-X-MEDIA:TYPE=AUDIO,LANGUAGE=\"eng\",NAME=\"Alternate Audio\",AUTOSELECT=YES,DEFAULT=YES,GROUP-ID=\"program_audio\",URI=\"masterp_128p@4.m3u8?bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&bpkio_sessionid=10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2&category=all&mm_sp\"\n"
+        },
+        "redirectURL": "",
+        "headersSize": 510,
+        "bodySize": 1363,
+        "_transferSize": 1873,
+        "_error": null,
+        "_fetchedViaServiceWorker": false
+    },
+    "serverIPAddress": "127.0.0.1",
+    "startedDateTime": "2025-05-07T15:08:50.422Z",
+    "time": 85.02199999929871,
+    "timings": {
+        "blocked": 0.8379999991767109,
+        "dns": -1,
+        "ssl": -1,
+        "connect": -1,
+        "send": 0.05699999999999994,
+        "wait": 83.94600000433066,
+        "receive": 0.18099999579135329,
+        "_blocked_queueing": 0.19099999917671084,
+        "_workerStart": -1,
+        "_workerReady": -1,
+        "_workerFetchStart": -1,
+        "_workerRespondWithSettled": -1
+    }
+}

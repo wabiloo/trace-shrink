@@ -1,0 +1,202 @@
+{
+    "_id": "15069",
+    "_remoteDeviceIP": null,
+    "_serverPort": 443,
+    "_clientAddress": "127.0.0.1",
+    "_clientName": "Browser Helper",
+    "comment": "MultiVariant playlist",
+    "_serverAddress": "18.245.253.68",
+    "timings": {
+        "send": -1,
+        "wait": -1,
+        "dns": -1,
+        "receive": -1,
+        "blocked": -1,
+        "connect": 1,
+        "ssl": -1
+    },
+    "_clientPort": 60778,
+    "_webSocketMessages": null,
+    "cache": {},
+    "_isHTTPS": true,
+    "serverIPAddress": "18.245.253.68",
+    "time": 83.60577,
+    "_name": "15069",
+    "response": {
+        "cookies": [],
+        "content": {
+            "mimeType": "application\/vnd.apple.mpegurl",
+            "text": "I0VYVE0zVQojRVhULVgtVkVSU0lPTjo0CiNFWFQtWC1JTkRFUEVOREVOVC1TRUdNRU5UUwoKIyBtZWRpYQojRVhULVgtTUVESUE6VFlQRT1BVURJTyxHUk9VUC1JRD0icHJvZ3JhbV9hdWRpbyIsTEFOR1VBR0U9ImVuZyIsTkFNRT0iRGVmYXVsdCBBdWRpbyIsQVVUT1NFTEVDVD1ZRVMsREVGQVVMVD1ZRVMKCiMgdmFyaWFudHMKI0VYVC1YLVNUUkVBTS1JTkY6QkFORFdJRFRIPTEwOTc4MDAsQVZFUkFHRS1CQU5EV0lEVEg9OTY1ODAwLENPREVDUz0iYXZjMS40ZDQwMjksbXA0YS40MC4yIixSRVNPTFVUSU9OPTY0MHgzNjAsRlJBTUUtUkFURT0yNSxBVURJTz0icHJvZ3JhbV9hdWRpbyIKbWFzdGVycF8zNjBwQDEubTN1OD9icGtpb19zZXJ2aWNlaWQ9MzAwZDE1MzljM2I2YWExN2E3OWE4ZmQ5ZjFlNDU0NDgmYnBraW9fc2Vzc2lvbmlkPTEwYTBkMzZkNC1mNjRhZjgwNC01NWU1LTRlMjUtOGI5NC0xMTlkNjI2ZDBiZjImY2F0ZWdvcnk9YWxsJm1tX3NwCiNFWFQtWC1TVFJFQU0tSU5GOkJBTkRXSURUSD0xNDE2ODAwLEFWRVJBR0UtQkFORFdJRFRIPTEyNDA4MDAsQ09ERUNTPSJhdmMxLjRkNDAyOSxtcDRhLjQwLjIiLFJFU09MVVRJT049ODU0eDQ4MCxGUkFNRS1SQVRFPTI1LEFVRElPPSJwcm9ncmFtX2F1ZGlvIgptYXN0ZXJwXzQ4MHBAMi5tM3U4P2Jwa2lvX3NlcnZpY2VpZD0zMDBkMTUzOWMzYjZhYTE3YTc5YThmZDlmMWU0NTQ0OCZicGtpb19zZXNzaW9uaWQ9MTBhMGQzNmQ0LWY2NGFmODA0LTU1ZTUtNGUyNS04Yjk0LTExOWQ2MjZkMGJmMiZjYXRlZ29yeT1hbGwmbW1fc3AKI0VYVC1YLVNUUkVBTS1JTkY6QkFORFdJRFRIPTMzMzA4MDAsQVZFUkFHRS1CQU5EV0lEVEg9Mjg5MDgwMCxDT0RFQ1M9ImF2YzEuNGQ0MDI5LG1wNGEuNDAuMiIsUkVTT0xVVElPTj0xMjgweDcyMCxGUkFNRS1SQVRFPTI1LEFVRElPPSJwcm9ncmFtX2F1ZGlvIgptYXN0ZXJwXzcyMHBAMy5tM3U4P2Jwa2lvX3NlcnZpY2VpZD0zMDBkMTUzOWMzYjZhYTE3YTc5YThmZDlmMWU0NTQ0OCZicGtpb19zZXNzaW9uaWQ9MTBhMGQzNmQ0LWY2NGFmODA0LTU1ZTUtNGUyNS04Yjk0LTExOWQ2MjZkMGJmMiZjYXRlZ29yeT1hbGwmbW1fc3AKCiMgbWVkaWEKI0VYVC1YLU1FRElBOlRZUEU9QVVESU8sTEFOR1VBR0U9ImVuZyIsTkFNRT0iQWx0ZXJuYXRlIEF1ZGlvIixBVVRPU0VMRUNUPVlFUyxERUZBVUxUPVlFUyxHUk9VUC1JRD0icHJvZ3JhbV9hdWRpbyIsVVJJPSJtYXN0ZXJwXzEyOHBANC5tM3U4P2Jwa2lvX3NlcnZpY2VpZD0zMDBkMTUzOWMzYjZhYTE3YTc5YThmZDlmMWU0NTQ0OCZicGtpb19zZXNzaW9uaWQ9MTBhMGQzNmQ0LWY2NGFmODA0LTU1ZTUtNGUyNS04Yjk0LTExOWQ2MjZkMGJmMiZjYXRlZ29yeT1hbGwmbW1fc3AiCg==",
+            "size": 1363,
+            "encoding": "base64"
+        },
+        "headers": [
+            {
+                "value": "application\/vnd.apple.mpegurl",
+                "name": "Content-Type"
+            },
+            {
+                "value": "keep-alive",
+                "name": "Connection"
+            },
+            {
+                "value": "Wed, 07 May 2025 15:08:50 GMT",
+                "name": "Date"
+            },
+            {
+                "value": "dfcc3ff446",
+                "name": "region_id"
+            },
+            {
+                "value": "no-store",
+                "name": "Cache-Control"
+            },
+            {
+                "value": "GET, HEAD",
+                "name": "Access-Control-Allow-Methods"
+            },
+            {
+                "value": "https:\/\/app.broadpeak.io",
+                "name": "Access-Control-Allow-Origin"
+            },
+            {
+                "value": "Accept-Encoding",
+                "name": "Vary"
+            },
+            {
+                "value": "Miss from cloudfront",
+                "name": "X-Cache"
+            },
+            {
+                "value": "1.1 d0aa9598a65ac1fc1db7782598afed26.cloudfront.net (CloudFront)",
+                "name": "Via"
+            },
+            {
+                "value": "LHR5-P5",
+                "name": "X-Amz-Cf-Pop"
+            },
+            {
+                "value": "yWYg_VG_3gEOWwlLKAX_nDmKUNOvrNS5fK-G07xo2BFzfmwWVZQJug==",
+                "name": "X-Amz-Cf-Id"
+            },
+            {
+                "value": "1363",
+                "name": "Content-Length"
+            }
+        ],
+        "redirectURL": "",
+        "headersSize": 510,
+        "status": 200,
+        "bodySize": 1363,
+        "statusText": "OK",
+        "httpVersion": "HTTP\/1.1"
+    },
+    "_isIntercepted": true,
+    "request": {
+        "headers": [
+            {
+                "name": "Host",
+                "value": "stream.broadpeak.io"
+            },
+            {
+                "name": "Connection",
+                "value": "keep-alive"
+            },
+            {
+                "name": "Pragma",
+                "value": "no-cache"
+            },
+            {
+                "name": "Cache-Control",
+                "value": "no-cache"
+            },
+            {
+                "name": "sec-ch-ua-platform",
+                "value": "\"macOS\""
+            },
+            {
+                "name": "User-Agent",
+                "value": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/136.0.0.0 Safari\/537.36"
+            },
+            {
+                "name": "sec-ch-ua",
+                "value": "\"Not.A\/Brand\";v=\"99\", \"Chromium\";v=\"136\""
+            },
+            {
+                "name": "DNT",
+                "value": "1"
+            },
+            {
+                "name": "sec-ch-ua-mobile",
+                "value": "?0"
+            },
+            {
+                "name": "Accept",
+                "value": "*\/*"
+            },
+            {
+                "name": "Origin",
+                "value": "https:\/\/app.broadpeak.io"
+            },
+            {
+                "name": "Sec-Fetch-Site",
+                "value": "same-site"
+            },
+            {
+                "name": "Sec-Fetch-Mode",
+                "value": "cors"
+            },
+            {
+                "name": "Sec-Fetch-Dest",
+                "value": "empty"
+            },
+            {
+                "name": "Referer",
+                "value": "https:\/\/app.broadpeak.io\/"
+            },
+            {
+                "name": "Accept-Encoding",
+                "value": "gzip, deflate, br, zstd"
+            },
+            {
+                "name": "Accept-Language",
+                "value": "en-US,en;q=0.9"
+            },
+            {
+                "name": "BPK-session",
+                "value": "10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2"
+            },
+            {
+                "name": "BPK-service",
+                "value": "300d1539c3b6aa17a79a8fd9f1e45448"
+            }
+        ],
+        "bodySize": 0,
+        "url": "https:\/\/stream.broadpeak.io\/hls\/live\/2003678\/ndtv24x7\/master.m3u8?bpkio_sessionid=10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2&bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&category=all",
+        "headersSize": 842,
+        "httpVersion": "HTTP\/1.1",
+        "method": "GET",
+        "cookies": [],
+        "queryString": [
+            {
+                "name": "bpkio_sessionid",
+                "value": "10a0d36d4-f64af804-55e5-4e25-8b94-119d626d0bf2"
+            },
+            {
+                "name": "bpkio_serviceid",
+                "value": "300d1539c3b6aa17a79a8fd9f1e45448"
+            },
+            {
+                "name": "category",
+                "value": "all"
+            }
+        ],
+        "postData": {
+            "mimeType": "",
+            "params": [],
+            "text": ""
+        }
+    },
+    "_clientBundlePath": "\/Applications\/Arc.app\/Contents\/Frameworks\/ArcCore.framework\/Versions\/A\/Helpers\/Browser Helper.app\/Contents\/MacOS\/Browser Helper",
+    "startedDateTime": "2025-05-07T15:08:50.423Z"
+}
