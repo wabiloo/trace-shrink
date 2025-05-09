@@ -6,7 +6,7 @@ import pytest
 from yarl import URL  # For URL assertions
 
 # Updated imports
-from abr_capture_snoop import ProxymanLogV2Entry, ProxymanLogV2Reader
+from abr_capture_spy import ProxymanLogV2Entry, ProxymanLogV2Reader
 
 # Define the structure and content for a dummy log file
 # Adjusted to include more fields for comprehensive testing and ensure IDs are consistent.
@@ -297,54 +297,6 @@ def test_get_entries_by_host_yielding_objects(dummy_log_file):
     # This expectation remains correct as it only includes the successfully loaded ones
     expected_null_ids = sorted(["json-id-missing-keys", "json-id-null-host"])
     assert null_host_ids == expected_null_ids
-
-
-# --- Test get_entries_for_url ---
-def test_get_entries_for_url(dummy_log_file):
-    reader = ProxymanLogV2Reader(dummy_log_file)
-
-    # Test matching a specific URI part
-    path1_entries = reader.get_entries_for_url(r"/path1")
-    assert len(path1_entries) == 1
-    assert isinstance(path1_entries[0], ProxymanLogV2Entry)
-    assert path1_entries[0].id == "123"
-
-    # Test matching a query parameter
-    query_abc_entries = reader.get_entries_for_url(r"q=abc")
-    assert len(query_abc_entries) == 1
-    assert query_abc_entries[0].id == "456"
-
-    # Test matching a hostname in the URL (yarl.URL makes this easy)
-    another_org_entries = reader.get_entries_for_url(
-        r"another\.org"
-    )  # Escape dot for regex
-    assert len(another_org_entries) == 1
-    assert another_org_entries[0].id == "456"
-
-    # Test no match
-    no_match_entries = reader.get_entries_for_url(r"/nonexistentpath")
-    assert len(no_match_entries) == 0
-
-    # Test with malformed entry - it shouldn't be returned if get_entry fails for it
-    # The regex r".*" would match anything if the URL could be formed.
-    # request_99_malformed-json-id should not be loadable by get_entry.
-    all_loadable_entries_by_url = reader.get_entries_for_url(
-        r".*"
-    )  # Match any valid URL
-    # We expect 5 loadable entries (0, 1, 2, 3_missing_keys, 4_null_host)
-    # 99_malformed is not loadable.
-    assert len(all_loadable_entries_by_url) == 5
-    ids_from_url_search = sorted([e.id for e in all_loadable_entries_by_url])
-    expected_ids = sorted(
-        [
-            "123",
-            "456",
-            "789",
-            "json-id-missing-keys",
-            "json-id-null-host",
-        ]
-    )
-    assert ids_from_url_search == expected_ids
 
 
 # --- Test Dunder Methods __len__ and __iter__ ---

@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from yarl import URL
 
-from abr_capture_snoop import HarEntry, HarReader
+from abr_capture_spy import HarEntry, HarReader
 
 # --- Fixtures ---
 
@@ -122,7 +122,7 @@ def test_har_reader_list_entries(har_reader: HarReader):
 def test_har_reader_get_entries_for_url(har_reader: HarReader):
     """Test filtering entries by URL pattern."""
     # Find entries with 'masterp_360p' in the URL (expecting HLS playlist)
-    hls_entries = har_reader.get_entries_for_url(r"masterp_360p")
+    hls_entries = har_reader.get_entries_for_partial_url("masterp_360p")
     assert len(hls_entries) > 0  # Expect at least one match in the sample file
     for entry in hls_entries:
         assert isinstance(entry, HarEntry)
@@ -130,13 +130,15 @@ def test_har_reader_get_entries_for_url(har_reader: HarReader):
 
     # Find entries for a specific host (using regex)
     # Note: Host matching might depend on case sensitivity of regex
-    bpk_entries = har_reader.get_entries_for_url(r"https://stream\.broadpeak\.io")
+    bpk_entries = har_reader.get_entries_for_partial_url(
+        "https://stream.broadpeak.io"
+    )
     assert len(bpk_entries) > 0  # Expect matches
     for entry in bpk_entries:
         assert entry.request.url.host == "stream.broadpeak.io"
 
     # Test no match
-    no_match_entries = har_reader.get_entries_for_url(r"nonexistentdomain")
+    no_match_entries = har_reader.get_entries_for_partial_url("nonexistentdomain")
     assert len(no_match_entries) == 0
 
 
@@ -145,7 +147,7 @@ def test_har_reader_get_entries_for_url(har_reader: HarReader):
 
 def test_har_entry_properties_from_reader(har_reader: HarReader):
     """Test properties of a specific entry loaded via the reader."""
-    hls_entries = har_reader.get_entries_for_url(r"masterp_360p@1\.m3u8")
+    hls_entries = har_reader.get_entries_for_partial_url("masterp_360p@1.m3u8")
     assert len(hls_entries) >= 1
     entry = hls_entries[0]
 

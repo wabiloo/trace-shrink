@@ -1,9 +1,14 @@
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from typing import Any, List, Optional
+from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
-from abr_capture_snoop.capture_entry import CaptureEntry
+import yarl
+
+from abr_capture_spy.abr_formats import get_abr_format
+from abr_capture_spy.capture_entry import CaptureEntry
+from build.lib.abr_capture_spy.abr_formats import AbrFormat
 
 
 class ArchiveReader(ABC):
@@ -29,12 +34,31 @@ class ArchiveReader(ABC):
         """
         pass
 
-    @abstractmethod
-    def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
+    def get_entries_for_url(self, url: str | yarl.URL) -> List[CaptureEntry]:
+        """
+        Retrieves entries for a specific URL.
+        """
+        matching_entries: List[CaptureEntry] = []
+        for entry in self:
+            if str(entry.request.url) == str(url):
+                matching_entries.append(entry)
+        return matching_entries
+
+    def get_entries_for_partial_url(
+        self, url_pattern: str | re.Pattern
+    ) -> List[CaptureEntry]:
         """
         Retrieves entries whose request URL matches the given pattern.
         """
-        pass
+        matching_entries: List[CaptureEntry] = []
+        for entry in self:
+            if isinstance(url_pattern, re.Pattern):
+                if url_pattern.search(str(entry.request.url)):
+                    matching_entries.append(entry)
+            else:
+                if url_pattern in str(entry.request.url):
+                    matching_entries.append(entry)
+        return matching_entries
 
     def filter(
         self,
@@ -108,3 +132,23 @@ class ArchiveReader(ABC):
 
             filtered_entries.append(entry)
         return filtered_entries
+
+    # ==== ABR manifest URLs ====
+
+    def get_abr_manifest_urls(
+        self, format: Optional[str | AbrFormat] = None
+    ) -> List[Tuple[yarl.URL, str]]:
+        """
+        Retrieves a list of URLs for ABR manifests, with optional filtering by format.
+        """
+        if isinstance(format, str):
+            format = AbrFormat(format)
+        urls = []
+        for entry in self:
+            abr_format = get_abr_format(entry.response.mime_type, entry.request.url)
+            if abr_format is None:
+                continue
+            if format is not None and abr_format != format:
+                continue
+            urls.append((entry.request.url, abr_format))
+        return list(set(urls))

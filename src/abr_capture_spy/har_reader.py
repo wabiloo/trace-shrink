@@ -1,4 +1,5 @@
-# src/abr_capture_snoop/har_reader.py
+# src/abr_capture_spy/har_reader.py
+import functools
 import json
 import re
 from typing import Any, Dict, Iterator, List, Optional
@@ -81,28 +82,28 @@ class HarReader(ArchiveReader):
 
     # --- Implementation of ArchiveReader abstract methods ---
 
-    def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
-        """
-        Retrieves entries whose request URL matches the given regex pattern.
+    # def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
+    #     """
+    #     Retrieves entries whose request URL matches the given regex pattern.
 
-        Args:
-            url_pattern: A regex pattern to match against the request URL.
+    #     Args:
+    #         url_pattern: A regex pattern to match against the request URL.
 
-        Returns:
-            A list of HarEntry objects whose request URL matches the pattern.
-        """
-        matching_entries: List[CaptureEntry] = []
-        url_regex = re.compile(url_pattern)
+    #     Returns:
+    #         A list of HarEntry objects whose request URL matches the pattern.
+    #     """
+    #     matching_entries: List[CaptureEntry] = []
+    #     url_regex = re.compile(url_pattern)
 
-        for entry in self._entries:
-            try:
-                current_url_str = str(entry.request.url)
-                if url_regex.search(current_url_str):
-                    matching_entries.append(entry)
-            except Exception:
-                # Handle cases where URL might be malformed or access fails
-                pass
-        return matching_entries
+    #     for entry in self._entries:
+    #         try:
+    #             current_url_str = str(entry.request.url)
+    #             if url_regex.search(current_url_str):
+    #                 matching_entries.append(entry)
+    #         except Exception:
+    #             # Handle cases where URL might be malformed or access fails
+    #             pass
+    #     return matching_entries
 
     def __len__(self) -> int:
         """Returns the total number of entries."""

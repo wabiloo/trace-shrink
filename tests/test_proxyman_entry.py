@@ -4,7 +4,7 @@ import pytest
 from yarl import URL
 
 # Updated import to use the new class from the new package structure
-from abr_capture_snoop import ProxymanLogV2Entry, ProxymanLogV2Reader
+from abr_capture_spy import ProxymanLogV2Entry, ProxymanLogV2Reader
 
 # Sample data (remains largely the same structure for raw input)
 SAMPLE_ENTRY_DATA = {

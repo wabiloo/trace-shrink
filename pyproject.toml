@@ -1,5 +1,5 @@
 [project]
-name = "abr-capture-snoop"
+name = "abr-capture-spy"
 version = "0.1.0"
 description = "A tool to analyze captures of ABR streams (HAR or Proxyman)."
 authors = [{ name = "Fabre Lambeau", email = "fabre.lambeau@gmail.com" }]
@@ -12,6 +12,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest>=8.0", # Use a recent version of pytest
+    "yarl>=1.9.0",
 ]
 
 [tool.uv]

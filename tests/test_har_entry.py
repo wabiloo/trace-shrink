@@ -5,7 +5,7 @@ import pytest
 from yarl import URL
 
 # Import the class to test
-from abr_capture_snoop import HarEntry
+from abr_capture_spy import HarEntry
 
 # Define a representative sample HAR entry dictionary for isolated testing
 # Based loosely on HAR 1.2 spec examples and common fields

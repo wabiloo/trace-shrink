@@ -212,28 +212,28 @@ class ProxymanLogV2Reader(ArchiveReader):
             if entry_obj:
                 yield entry_obj
 
-    def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
-        """
-        Retrieves entries whose request URL matches the given regex pattern.
-        This implementation iterates through all entries, which can be slow for large archives.
-        Consider optimizing if this is a frequent operation.
+    # def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
+    #     """
+    #     Retrieves entries whose request URL matches the given regex pattern.
+    #     This implementation iterates through all entries, which can be slow for large archives.
+    #     Consider optimizing if this is a frequent operation.
 
-        Args:
-            url_pattern: A regex pattern to match against the request URI.
+    #     Args:
+    #         url_pattern: A regex pattern to match against the request URI.
 
-        Returns:
-            A list of ProxymanLogV2Entry objects whose request URI matches the pattern.
-        """
-        matching_entries: List[CaptureEntry] = []
-        url_regex = re.compile(url_pattern)
+    #     Returns:
+    #         A list of ProxymanLogV2Entry objects whose request URI matches the pattern.
+    #     """
+    #     matching_entries: List[CaptureEntry] = []
+    #     url_regex = re.compile(url_pattern)
 
-        for entry_obj in self:
-            if entry_obj:
-                try:
-                    current_url_str = str(entry_obj.request.url)
-                    if url_regex.search(current_url_str):
-                        matching_entries.append(entry_obj)
-                except Exception:
-                    pass
+    #     for entry_obj in self:
+    #         if entry_obj:
+    #             try:
+    #                 current_url_str = str(entry_obj.request.url)
+    #                 if url_regex.search(current_url_str):
+    #                     matching_entries.append(entry_obj)
+    #             except Exception:
+    #                 pass
 
-        return matching_entries
+    #     return matching_entries

@@ -1,4 +1,4 @@
-# src/abr_capture_snoop/har_entry.py
+# src/abr_capture_spy/har_entry.py
 import base64
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
