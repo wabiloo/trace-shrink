@@ -27,6 +27,13 @@ class DecoratedUrl:
 
 
 class ArchiveReader(ABC):
+    """
+    Abstract base class for all trace archive readers (HAR, Proxyman, etc).
+
+    To instantiate the correct reader for a given file, use the
+    `open_archive(path)` factory function provided by the package.
+    """
+
     @property
     @abstractmethod
     def entries(self) -> List[TraceEntry]:

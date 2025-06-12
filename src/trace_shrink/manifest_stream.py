@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import bisect
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Literal, Optional
 
+from .abr_formats import get_abr_format
 from .trace_entry import TraceEntry
 
 
@@ -32,9 +33,21 @@ class ManifestStream:
 
         # Sort entries by the request start timestamp. Handle cases where timestamp might be None.
         self.entries = sorted(
-            entries, key=lambda e: e.timeline.request_start or datetime.min
+            entries,
+            key=lambda e: (e.timeline.request_start or datetime.min).astimezone(
+                timezone.utc
+            ),
         )
-        self.timestamps = [e.timeline.request_start for e in self.entries]
+        # Ensure all timestamps are timezone-aware (UTC)
+        self.timestamps = [
+            (e.timeline.request_start or datetime.min).astimezone(timezone.utc)
+            for e in self.entries
+        ]
+        # Determine format from the first entry
+        first_entry = self.entries[0]
+        mime_type = first_entry.response.headers.get("content-type", "")
+        url = first_entry.request.url
+        self.format = get_abr_format(mime_type, url)
 
     def find_entry_by_time(
         self,
