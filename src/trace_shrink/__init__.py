@@ -5,6 +5,7 @@ ABR Capture Inspector Library
 from .archive_reader import ArchiveReader
 from .har_entry import HarEntry
 from .har_reader import HarReader
+from .manifest_stream import ManifestStream
 from .proxyman_entry import ProxymanLogV2Entry
 from .proxyman_log_reader import ProxymanLogV2Reader
 from .trace_entry import (
@@ -26,4 +27,5 @@ __all__ = [
     "ProxymanLogV2Entry",
     "HarReader",
     "HarEntry",
+    "ManifestStream",
 ]

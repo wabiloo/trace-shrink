@@ -7,9 +7,9 @@ from urllib.parse import urlparse
 
 import yarl
 
-from build.lib.abr_capture_spy.abr_formats import AbrFormat
-from trace_shrink.abr_formats import get_abr_format
-from trace_shrink.trace_entry import TraceEntry
+from .abr_formats import Format, get_abr_format
+from .manifest_stream import ManifestStream
+from .trace_entry import TraceEntry
 
 
 @dataclass
@@ -148,16 +148,35 @@ class ArchiveReader(ABC):
             filtered_entries.append(entry)
         return filtered_entries
 
+    def get_manifest_stream(self, manifest_url: str | yarl.URL) -> ManifestStream:
+        """
+        Filters entries for the given manifest_url and returns a
+        ManifestStream object to manage them.
+
+        Args:
+            manifest_url: The URL of the manifest to get a stream for.
+
+        Returns:
+            A ManifestStream object.
+
+        Raises:
+            ValueError: If no entries are found for the given manifest URL.
+        """
+        manifest_entries = self.get_entries_for_url(manifest_url)
+        if not manifest_entries:
+            raise ValueError(f"No entries found for manifest URL: {manifest_url}")
+        return ManifestStream(manifest_entries)
+
     # ==== ABR manifest URLs ====
 
     def get_abr_manifest_urls(
-        self, format: Optional[str | AbrFormat] = None
+        self, format: Optional[str | Format] = None
     ) -> List[DecoratedUrl]:
         """
         Retrieves a list of URLs for ABR manifests, with optional filtering by format.
         """
         if isinstance(format, str):
-            format = AbrFormat(format)
+            format = Format(format)
         urls = []
         for entry in self:
             abr_format = get_abr_format(entry.response.mime_type, entry.request.url)

@@ -153,29 +153,29 @@ class TestArchiveReaderGetAbrManifestUrls:
                 yarl.URL(
                     "https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/masterp_360p@1.m3u8"
                 ),
-                Format.HLS
+                Format.HLS,
             ),
             DecoratedUrl(
                 yarl.URL(
                     "https://stream.broadpeak.io/hls/live/2003678/ndtv24x7/masterp_360p@1.m3u8?bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&bpkio_sessionid=10f0b15c15-19b01c4e-afbe-4590-80d1-2c3803a50505&category=all&mm_sp"
                 ),
-                Format.HLS
+                Format.HLS,
             ),
             DecoratedUrl(
                 yarl.URL("https://ajo.prod.reuters.tv/v3/playlist/691410/master.m3u8"),
-                Format.HLS
+                Format.HLS,
             ),
             DecoratedUrl(
                 yarl.URL(
                     "https://ajo.prod.reuters.tv/v3/playlist/320x180/691410/rendition.m3u8"
                 ),
-                Format.HLS
+                Format.HLS,
             ),
             DecoratedUrl(
                 yarl.URL(
                     "https://ajo.prod.reuters.tv/v3/playlist/640x360/691410/rendition.m3u8"
                 ),
-                Format.HLS
+                Format.HLS,
             ),
         }
 
