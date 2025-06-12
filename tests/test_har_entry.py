@@ -5,7 +5,7 @@ import pytest
 from yarl import URL
 
 # Import the class to test
-from abr_capture_spy import HarEntry
+from trace_shrink import HarEntry
 
 # Define a representative sample HAR entry dictionary for isolated testing
 # Based loosely on HAR 1.2 spec examples and common fields
@@ -179,7 +179,7 @@ def test_har_response_body_no_text(sample_har_entry):
 # --- Timings ---
 def test_har_timings(sample_har_entry):
     """Test parsing of timing values."""
-    timings = sample_har_entry.timings
+    timings = sample_har_entry.timeline
     assert timings.request_start is not None
     assert timings.response_end is not None
 

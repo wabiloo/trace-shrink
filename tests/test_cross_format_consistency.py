@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from yarl import URL
 
-from abr_capture_spy import HarEntry, ProxymanLogV2Entry
+from trace_shrink import HarEntry, ProxymanLogV2Entry
 
 # Define paths to the archive files
 ARCHIVES_DIR = Path(__file__).parent / "archives"

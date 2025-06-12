@@ -6,7 +6,6 @@ import zipfile
 from typing import Any, Dict, Iterator, List, Optional
 
 from .archive_reader import ArchiveReader
-from .capture_entry import CaptureEntry
 from .proxyman_entry import ProxymanLogV2Entry
 
 

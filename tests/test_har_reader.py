@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from yarl import URL
 
-from abr_capture_spy import HarEntry, HarReader
+from trace_shrink import HarEntry, HarReader
 
 # --- Fixtures ---
 
@@ -130,9 +130,7 @@ def test_har_reader_get_entries_for_url(har_reader: HarReader):
 
     # Find entries for a specific host (using regex)
     # Note: Host matching might depend on case sensitivity of regex
-    bpk_entries = har_reader.get_entries_for_partial_url(
-        "https://stream.broadpeak.io"
-    )
+    bpk_entries = har_reader.get_entries_for_partial_url("https://stream.broadpeak.io")
     assert len(bpk_entries) > 0  # Expect matches
     for entry in bpk_entries:
         assert entry.request.url.host == "stream.broadpeak.io"
@@ -159,10 +157,10 @@ def test_har_entry_properties_from_reader(har_reader: HarReader):
     assert entry.response.mime_type == "application/x-mpegURL"
 
     # Check timings: allow for None (if timing value was -1 in HAR)
-    start_time = entry.timings.request_start
+    start_time = entry.timeline.request_start
     assert start_time is not None
 
-    response_end = entry.timings.response_end
+    response_end = entry.timeline.response_end
     assert response_end is not None
     assert response_end > start_time
 

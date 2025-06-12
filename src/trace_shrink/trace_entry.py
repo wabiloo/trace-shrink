@@ -66,7 +66,7 @@ class ResponseDetails(ABC):
         pass
 
 
-class TimingsDetails(ABC):
+class TimelineDetails(ABC):
     @property
     @abstractmethod
     def request_start(self) -> Optional[datetime]:
@@ -88,7 +88,7 @@ class TimingsDetails(ABC):
         pass
 
 
-class CaptureEntry(ABC):
+class TraceEntry(ABC):
     @property
     @abstractmethod
     def index(self) -> int:
@@ -116,5 +116,5 @@ class CaptureEntry(ABC):
 
     @property
     @abstractmethod
-    def timings(self) -> TimingsDetails:  # Or specific timing attributes directly
+    def timeline(self) -> TimelineDetails:  # Or specific timing attributes directly
         pass

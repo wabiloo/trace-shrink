@@ -5,12 +5,12 @@ from typing import Any, Dict, List, Optional, Union
 
 from yarl import URL
 
-from .capture_entry import (
-    CaptureEntry,
+from .trace_entry import (
     RequestDetails,
     ResponseBodyDetails,
     ResponseDetails,
-    TimingsDetails,
+    TimelineDetails,
+    TraceEntry,
 )
 
 # Forward declaration for type hinting reader if ProxymanLogV2Reader is in a separate file
@@ -211,7 +211,7 @@ class _ProxymanResponseDetails(ResponseDetails):
         return self._data.get("status", {}).get("code", 0)  # Default to 0 if not found
 
 
-class _ProxymanTimingsDetails(TimingsDetails):
+class _ProxymanTimelineDetails(TimelineDetails):
     def __init__(self, entry_data: Dict[str, Any]):
         self._data = entry_data.get("timing", {})
 
@@ -232,7 +232,7 @@ class _ProxymanTimingsDetails(TimingsDetails):
         return datetime.fromtimestamp(self._data.get("responseEndedAt", 0))
 
 
-class ProxymanLogV2Entry(CaptureEntry):
+class ProxymanLogV2Entry(TraceEntry):
     """
     Represents a single request/response entry from a Proxyman log file.
     This class provides access to entry data according to the CaptureEntry interface.
@@ -260,7 +260,7 @@ class ProxymanLogV2Entry(CaptureEntry):
         # Initialize helper objects that parse parts of raw_data
         self._request_details = _ProxymanRequestDetails(self._raw_data, self)
         self._response_details = _ProxymanResponseDetails(self._raw_data, self)
-        self._timing_details = _ProxymanTimingsDetails(
+        self._timeline_details = _ProxymanTimelineDetails(
             self._raw_data
         )  # Pass raw_data directly
 
@@ -328,8 +328,8 @@ class ProxymanLogV2Entry(CaptureEntry):
         return self._raw_data.get("notes")  # Or None if 'notes' is not present
 
     @property
-    def timings(self) -> TimingsDetails:
-        return self._timing_details
+    def timeline(self) -> TimelineDetails:
+        return self._timeline_details
 
     # --- Potentially useful additional methods specific to Proxyman data structure ---
 

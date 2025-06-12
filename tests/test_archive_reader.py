@@ -5,19 +5,19 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 import yarl
 
-from abr_capture_spy.abr_formats import Format
-from abr_capture_spy.archive_reader import ArchiveReader
-from abr_capture_spy.capture_entry import CaptureEntry, RequestDetails, ResponseDetails
-from abr_capture_spy.har_reader import HarReader
+from trace_shrink.abr_formats import Format
+from trace_shrink.archive_reader import ArchiveReader, DecoratedUrl
+from trace_shrink.har_reader import HarReader
+from trace_shrink.trace_entry import RequestDetails, ResponseDetails, TraceEntry
 
 
 # Concrete implementation of ArchiveReader for testing
 class MockArchiveReader(ArchiveReader):
-    def __init__(self, entries: list[CaptureEntry]):
+    def __init__(self, entries: list[TraceEntry]):
         self._entries = entries
 
     @property
-    def entries(self) -> list[CaptureEntry]:
+    def entries(self) -> list[TraceEntry]:
         return self._entries
 
     def __len__(self) -> int:
@@ -27,8 +27,8 @@ class MockArchiveReader(ArchiveReader):
         return iter(self._entries)
 
 
-def create_mock_entry(url_str: str, mime_type: str) -> CaptureEntry:
-    entry = MagicMock(spec=CaptureEntry)
+def create_mock_entry(url_str: str, mime_type: str) -> TraceEntry:
+    entry = MagicMock(spec=TraceEntry)
     entry.request = MagicMock(spec=RequestDetails)
     entry.request.url = yarl.URL(url_str)
     entry.response = MagicMock(spec=ResponseDetails)
@@ -56,7 +56,7 @@ class TestArchiveReaderGetAbrManifestUrls:
             create_mock_entry("http://example.com/video.mp4", "video/mp4"),
         ]
         reader = MockArchiveReader(entries=entries)
-        expected = [(hls_url, Format.HLS)]
+        expected = [DecoratedUrl(hls_url, Format.HLS)]
         assert reader.get_abr_manifest_urls() == expected
 
     def test_get_abr_manifest_urls_one_dash_manifest_by_mime(self):
@@ -66,7 +66,7 @@ class TestArchiveReaderGetAbrManifestUrls:
             create_mock_entry("http://example.com/video.mp4", "video/mp4"),
         ]
         reader = MockArchiveReader(entries=entries)
-        expected = [(dash_url, Format.DASH)]
+        expected = [DecoratedUrl(dash_url, Format.DASH)]
         assert reader.get_abr_manifest_urls() == expected
 
     def test_get_abr_manifest_urls_one_dash_manifest_by_extension(self):
@@ -77,7 +77,7 @@ class TestArchiveReaderGetAbrManifestUrls:
             create_mock_entry("http://example.com/video.mp4", "video/mp4"),
         ]
         reader = MockArchiveReader(entries=entries)
-        expected = [(dash_url, Format.DASH)]
+        expected = [DecoratedUrl(dash_url, Format.DASH)]
         assert reader.get_abr_manifest_urls() == expected
 
     def test_get_abr_manifest_urls_one_hls_manifest_by_extension(self):
@@ -88,7 +88,7 @@ class TestArchiveReaderGetAbrManifestUrls:
             create_mock_entry("http://example.com/video.mp4", "video/mp4"),
         ]
         reader = MockArchiveReader(entries=entries)
-        expected = [(hls_url, Format.HLS)]
+        expected = [DecoratedUrl(hls_url, Format.HLS)]
         assert reader.get_abr_manifest_urls() == expected
 
     def test_get_abr_manifest_urls_multiple_abr_manifests(self):
@@ -102,9 +102,9 @@ class TestArchiveReaderGetAbrManifestUrls:
         ]
         reader = MockArchiveReader(entries=entries)
         expected_set = {  # Use a set for order-agnostic comparison
-            (hls_url, Format.HLS),
-            (dash_url, Format.DASH),
-            (another_hls_url, Format.HLS),
+            DecoratedUrl(hls_url, Format.HLS),
+            DecoratedUrl(dash_url, Format.DASH),
+            DecoratedUrl(another_hls_url, Format.HLS),
         }
         actual_result = reader.get_abr_manifest_urls()
         assert len(actual_result) == len(expected_set)
@@ -118,14 +118,14 @@ class TestArchiveReaderGetAbrManifestUrls:
             create_mock_entry("http://example.com/image.jpg", "image/jpeg"),
         ]
         reader = MockArchiveReader(entries=entries)
-        expected = [(hls_url, Format.HLS)]
+        expected = [DecoratedUrl(hls_url, Format.HLS)]
         assert reader.get_abr_manifest_urls() == expected
 
     def test_get_abr_manifest_urls_url_object_passed_correctly(self):
         # Ensures that the yarl.URL object from the entry is passed, not a string
         hls_url_obj = yarl.URL("http://example.com/master.m3u8")
 
-        entry_mock = MagicMock(spec=CaptureEntry)
+        entry_mock = MagicMock(spec=TraceEntry)
         entry_mock.request = MagicMock(spec=RequestDetails)
         # Crucially, request.url is already a yarl.URL object
         type(entry_mock.request).url = PropertyMock(return_value=hls_url_obj)
@@ -137,8 +137,8 @@ class TestArchiveReaderGetAbrManifestUrls:
         result = reader.get_abr_manifest_urls()
 
         assert len(result) == 1
-        assert result[0][0] is hls_url_obj  # Check for object identity
-        assert result[0][1] == Format.HLS
+        assert result[0].url is hls_url_obj  # Check for object identity
+        assert result[0].format == Format.HLS
 
     def test_get_abr_manifest_urls_from_real_har_file(self):
         """Test get_abr_manifest_urls with a real HAR file."""
@@ -149,33 +149,33 @@ class TestArchiveReaderGetAbrManifestUrls:
 
         # All manifest-like URLs in this file are HLS.
         expected_urls_formats_set = {  # Using a set for order-agnostic comparison
-            (
+            DecoratedUrl(
                 yarl.URL(
                     "https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/masterp_360p@1.m3u8"
                 ),
-                Format.HLS,
+                Format.HLS
             ),
-            (
+            DecoratedUrl(
                 yarl.URL(
                     "https://stream.broadpeak.io/hls/live/2003678/ndtv24x7/masterp_360p@1.m3u8?bpkio_serviceid=300d1539c3b6aa17a79a8fd9f1e45448&bpkio_sessionid=10f0b15c15-19b01c4e-afbe-4590-80d1-2c3803a50505&category=all&mm_sp"
                 ),
-                Format.HLS,
+                Format.HLS
             ),
-            (
+            DecoratedUrl(
                 yarl.URL("https://ajo.prod.reuters.tv/v3/playlist/691410/master.m3u8"),
-                Format.HLS,
+                Format.HLS
             ),
-            (
+            DecoratedUrl(
                 yarl.URL(
                     "https://ajo.prod.reuters.tv/v3/playlist/320x180/691410/rendition.m3u8"
                 ),
-                Format.HLS,
+                Format.HLS
             ),
-            (
+            DecoratedUrl(
                 yarl.URL(
                     "https://ajo.prod.reuters.tv/v3/playlist/640x360/691410/rendition.m3u8"
                 ),
-                Format.HLS,
+                Format.HLS
             ),
         }
 

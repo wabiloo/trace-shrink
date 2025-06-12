@@ -5,12 +5,12 @@ from typing import Any, Dict, List, Optional, Union
 
 from yarl import URL
 
-from .capture_entry import (
-    CaptureEntry,
+from .trace_entry import (
     RequestDetails,
     ResponseBodyDetails,
     ResponseDetails,
-    TimingsDetails,
+    TimelineDetails,
+    TraceEntry,
 )
 
 # Forward declaration for type hinting reader
@@ -220,7 +220,7 @@ class _HarResponseDetails(ResponseDetails):
         return self._data.get("status", 0)
 
 
-class _HarTimingsDetails(TimingsDetails):
+class _HarTimelineDetails(TimelineDetails):
     def __init__(self, started_date_time: str, duration_ms: float):
         self._started_date_time = started_date_time
         self._duration_ms = duration_ms
@@ -249,7 +249,7 @@ class _HarTimingsDetails(TimingsDetails):
         return None
 
 
-class HarEntry(CaptureEntry):
+class HarEntry(TraceEntry):
     def __init__(self, har_entry_data: Dict[str, Any], reader: Any, entry_index: int):
         self._raw_data = har_entry_data
         self._reader = reader
@@ -261,8 +261,8 @@ class HarEntry(CaptureEntry):
         self._response_details = _HarResponseDetails(
             self._raw_data.get("response", {}), self
         )
-        # Pass self to _HarTimingsDetails if it needs to access parent HarEntry.time
-        self._timing_details = _HarTimingsDetails(
+        # Pass self to _HarTimelineDetails if it needs to access parent HarEntry.time
+        self._timeline_details = _HarTimelineDetails(
             self._raw_data.get("startedDateTime", ""),
             self._raw_data.get("time", 0),
         )
@@ -292,8 +292,8 @@ class HarEntry(CaptureEntry):
         return self._raw_data.get("comment")
 
     @property
-    def timings(self) -> TimingsDetails:
-        return self._timing_details
+    def timeline(self) -> TimelineDetails:
+        return self._timeline_details
 
     def get_raw_json(self) -> Dict[str, Any]:
         return self._raw_data

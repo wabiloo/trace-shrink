@@ -6,7 +6,7 @@ import pytest
 from yarl import URL  # For URL assertions
 
 # Updated imports
-from abr_capture_spy import ProxymanLogV2Entry, ProxymanLogV2Reader
+from trace_shrink import ProxymanLogV2Entry, ProxymanLogV2Reader
 
 # Define the structure and content for a dummy log file
 # Adjusted to include more fields for comprehensive testing and ensure IDs are consistent.

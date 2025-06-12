@@ -1,20 +1,35 @@
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 import yarl
 
-from abr_capture_spy.abr_formats import get_abr_format
-from abr_capture_spy.capture_entry import CaptureEntry
 from build.lib.abr_capture_spy.abr_formats import AbrFormat
+from trace_shrink.abr_formats import get_abr_format
+from trace_shrink.trace_entry import TraceEntry
+
+
+@dataclass
+class DecoratedUrl:
+    url: yarl.URL
+    format: str
+
+    def __hash__(self) -> int:
+        return hash((self.url, self.format))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DecoratedUrl):
+            return False
+        return self.url == other.url and self.format == other.format
 
 
 class ArchiveReader(ABC):
     @property
     @abstractmethod
-    def entries(self) -> List[CaptureEntry]:
+    def entries(self) -> List[TraceEntry]:
         """
         Returns a list of entries.
         """
@@ -28,17 +43,17 @@ class ArchiveReader(ABC):
         pass
 
     @abstractmethod
-    def __iter__(self) -> Iterator[CaptureEntry]:
+    def __iter__(self) -> Iterator[TraceEntry]:
         """
         Returns an iterator over the entries in the archive.
         """
         pass
 
-    def get_entries_for_url(self, url: str | yarl.URL) -> List[CaptureEntry]:
+    def get_entries_for_url(self, url: str | yarl.URL) -> List[TraceEntry]:
         """
         Retrieves entries for a specific URL.
         """
-        matching_entries: List[CaptureEntry] = []
+        matching_entries: List[TraceEntry] = []
         for entry in self:
             if str(entry.request.url) == str(url):
                 matching_entries.append(entry)
@@ -46,11 +61,11 @@ class ArchiveReader(ABC):
 
     def get_entries_for_partial_url(
         self, url_pattern: str | re.Pattern
-    ) -> List[CaptureEntry]:
+    ) -> List[TraceEntry]:
         """
         Retrieves entries whose request URL matches the given pattern.
         """
-        matching_entries: List[CaptureEntry] = []
+        matching_entries: List[TraceEntry] = []
         for entry in self:
             if isinstance(url_pattern, re.Pattern):
                 if url_pattern.search(str(entry.request.url)):
@@ -66,7 +81,7 @@ class ArchiveReader(ABC):
         url: Optional[str] = None,
         partial_url: Optional[str] = None,
         mime_type: Optional[str] = None,
-    ) -> List[CaptureEntry]:
+    ) -> List[TraceEntry]:
         """
         Filters entries based on a set of optional criteria.
 
@@ -86,7 +101,7 @@ class ArchiveReader(ABC):
         Returns:
             A list of CaptureEntry objects that satisfy all provided filter criteria.
         """
-        filtered_entries: List[CaptureEntry] = []
+        filtered_entries: List[TraceEntry] = []
         for entry in self:  # Relies on __iter__
             # Host filter
             if host is not None:
@@ -137,7 +152,7 @@ class ArchiveReader(ABC):
 
     def get_abr_manifest_urls(
         self, format: Optional[str | AbrFormat] = None
-    ) -> List[Tuple[yarl.URL, str]]:
+    ) -> List[DecoratedUrl]:
         """
         Retrieves a list of URLs for ABR manifests, with optional filtering by format.
         """
@@ -150,5 +165,5 @@ class ArchiveReader(ABC):
                 continue
             if format is not None and abr_format != format:
                 continue
-            urls.append((entry.request.url, abr_format))
+            urls.append(DecoratedUrl(entry.request.url, abr_format))
         return list(set(urls))

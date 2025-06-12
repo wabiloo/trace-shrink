@@ -1,12 +1,10 @@
 # src/abr_capture_spy/har_reader.py
-import functools
 import json
-import re
 from typing import Any, Dict, Iterator, List, Optional
 
 from .archive_reader import ArchiveReader
-from .capture_entry import CaptureEntry  # For type hinting
 from .har_entry import HarEntry
+from .trace_entry import TraceEntry  # For type hinting
 
 
 class HarReader(ArchiveReader):

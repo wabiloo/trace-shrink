@@ -4,7 +4,7 @@ import pytest
 from yarl import URL
 
 # Updated import to use the new class from the new package structure
-from abr_capture_spy import ProxymanLogV2Entry, ProxymanLogV2Reader
+from trace_shrink import ProxymanLogV2Entry, ProxymanLogV2Reader
 
 # Sample data (remains largely the same structure for raw input)
 SAMPLE_ENTRY_DATA = {
@@ -274,7 +274,7 @@ def test_comment_property_missing():
 # --- Testing .timings property (placeholder) ---
 def test_timings_property(sample_entry):
     # Current _ProxymanTimingsDetails is a placeholder
-    assert sample_entry.timings is not None
+    assert sample_entry.timeline is not None
     # Add more specific timing tests once _ProxymanTimingsDetails is implemented
 
 
