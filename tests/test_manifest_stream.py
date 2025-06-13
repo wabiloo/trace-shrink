@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import yarl
 
+from trace_shrink.formats import Format
 from trace_shrink.manifest_stream import ManifestStream
 
 
@@ -163,3 +164,35 @@ def test_position_before_first_entry_returns_none(stream: ManifestStream):
     target_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     found = stream.find_entry_by_time(target_time, position="before")
     assert found is None
+
+
+# === Test for .format property ===
+@pytest.mark.parametrize(
+    "url, mime_type, expected_format",
+    [
+        # HLS detection
+        ("http://test.com/master.m3u8", "application/vnd.apple.mpegurl", Format.HLS),
+        ("http://test.com/other.m3u8", "application/x-mpegurl", Format.HLS),
+        ("http://test.com/playlist.m3u8", "application/octet-stream", Format.HLS),
+        # by extension
+        # DASH detection
+        ("http://test.com/manifest.mpd", "application/dash+xml", Format.DASH),
+        ("http://test.com/init.mpd", "application/octet-stream", Format.DASH),
+        # by extension
+        # No ABR format
+        ("http://test.com/video.ts", "video/mp2t", None),
+        ("http://test.com/data.json", "application/json", None),
+        ("http://test.com/text", "text/plain", None),
+    ],
+)
+def test_manifest_stream_format_property(url, mime_type, expected_format):
+    """Tests that the .format property is correctly determined from the first entry."""
+    # Create a mock entry with the specified URL and MIME type.
+    # The existing helper creates a very specific type of entry, so we'll just modify it.
+    entry = create_mock_entry(datetime.now(timezone.utc))
+    entry.request.url = yarl.URL(url)
+    entry.response.headers = {"content-type": mime_type}
+
+    stream = ManifestStream([entry])
+
+    assert stream.format == expected_format
