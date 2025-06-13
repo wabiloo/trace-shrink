@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import yarl
 
-from .abr_formats import Format, get_abr_format
+from .formats import Format
 from .manifest_stream import ManifestStream
 from .trace_entry import TraceEntry
 
@@ -63,6 +63,16 @@ class ArchiveReader(ABC):
         matching_entries: List[TraceEntry] = []
         for entry in self:
             if str(entry.request.url) == str(url):
+                matching_entries.append(entry)
+        return matching_entries
+
+    def get_entries_by_path(self, path: str) -> List[TraceEntry]:
+        """
+        Retrieves entries for a specific path.
+        """
+        matching_entries: List[TraceEntry] = []
+        for entry in self:
+            if entry.request.url.path == path:
                 matching_entries.append(entry)
         return matching_entries
 
@@ -186,10 +196,12 @@ class ArchiveReader(ABC):
             format = Format(format)
         urls = []
         for entry in self:
-            abr_format = get_abr_format(entry.response.mime_type, entry.request.url)
+            abr_format = Format.from_url_or_mime_type(
+                entry.response.mime_type, entry.request.url
+            )
             if abr_format is None:
                 continue
             if format is not None and abr_format != format:
                 continue
-            urls.append(DecoratedUrl(entry.request.url, abr_format))
+            urls.append(DecoratedUrl(entry.request.url, abr_format.value))
         return list(set(urls))

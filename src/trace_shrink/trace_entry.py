@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union  # Add yarl.URL later
 
 import yarl
 
-from trace_shrink.abr_formats import is_string_content
+from trace_shrink.formats import MimeType
 
 
 class RequestDetails(ABC):
@@ -157,7 +157,7 @@ class TraceEntry(ABC):
         """The content of the entry, extracted from the response body."""
         b = self.response.body
 
-        if is_string_content(self.response.content_type):
+        if MimeType(self.response.content_type).has_text_content():
             return b.text
         else:
             return b._get_decoded_body()

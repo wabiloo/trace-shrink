@@ -4,7 +4,7 @@ import bisect
 from datetime import datetime, timedelta, timezone
 from typing import List, Literal, Optional
 
-from .abr_formats import get_abr_format
+from .formats import Format
 from .trace_entry import TraceEntry
 
 
@@ -47,7 +47,8 @@ class ManifestStream:
         first_entry = self.entries[0]
         mime_type = first_entry.response.headers.get("content-type", "")
         url = first_entry.request.url
-        self.format = get_abr_format(mime_type, url)
+        abr_format = Format.from_url_or_mime_type(mime_type, url)
+        self.format = abr_format.value if abr_format else None
 
     def find_entry_by_time(
         self,
