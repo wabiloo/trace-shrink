@@ -49,6 +49,10 @@ class ManifestStream:
         url = first_entry.request.url
         self.format = Format.from_url_or_mime_type(mime_type, url)
 
+    def get_original_path(self) -> str:
+        """Get the original path of the manifest."""
+        return self.entries[0].request.url.path
+
     def find_entry_by_time(
         self,
         target_time: datetime,
