@@ -15,11 +15,6 @@ build-backend = "hatchling.build"
 [tool.mkdocstrings]
 default_handler = "python"
 
-[tool.uv.scripts]
-docs = "mkdocs serve"
-
-[tool.uv]
-
 [dependency-groups]
 dev = [
     "mkdocs>=1.6.1",
