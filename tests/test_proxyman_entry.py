@@ -258,6 +258,10 @@ def test_response_body_text_encoding_logic():
         "Hello" in entry_invalid_utf8.response.body.text
     )  # 정확한 치환 문자는 다를 수 있음
 
+# --- Testing .content property ---
+def test_content_property(sample_entry):
+    assert sample_entry.content == sample_entry.response.body.text
+
 
 # --- Testing .comment property ---
 def test_comment_property(sample_entry):

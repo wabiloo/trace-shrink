@@ -118,3 +118,13 @@ class TraceEntry(ABC):
     @abstractmethod
     def timeline(self) -> TimelineDetails:  # Or specific timing attributes directly
         pass
+
+    @property
+    def content(self) -> bytes | str:
+        """The content of the entry, extracted from the response body."""
+        b = self.response.body
+
+        if is_string_content(self.response.content_type):
+            return b.text
+        else:
+            return b._get_decoded_body()

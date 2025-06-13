@@ -9,7 +9,11 @@ class Format(Enum):
 
 
 MIME_TYPES = {
-    Format.HLS: ["application/vnd.apple.mpegurl", "application/x-mpegurl"],
+    Format.HLS: [
+        "application/vnd.apple.mpegurl",
+        "application/x-mpegurl",
+        "application/x-mpegURL",
+    ],
     Format.DASH: ["application/dash+xml", "application/dash-xml"],
 }
 
@@ -24,6 +28,11 @@ def is_dash_mime_type(mime_type: str) -> bool:
 
 def is_abr_mime_type(mime_type: str) -> bool:
     return is_mime_type(mime_type, "HLS") or is_mime_type(mime_type, "DASH")
+
+
+def is_string_content(mime_type: str) -> bool:
+    # check if the mime type is a content-type for HLS or DASH formats, based on the MIME_TYPES dictionary
+    return any(mime_type in mime_types for mime_types in MIME_TYPES.values())
 
 
 def get_abr_format_from_mime_type(mime_type: str) -> str:

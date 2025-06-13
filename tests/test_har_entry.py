@@ -176,6 +176,9 @@ def test_har_response_body_no_text(sample_har_entry):
     assert entry_no_text.response.body.compressed_size == 50
 
 
+def test_har_content_property(sample_har_entry):
+    assert sample_har_entry.content.decode("utf-8") == sample_har_entry.response.body.text
+
 # --- Timings ---
 def test_har_timings(sample_har_entry):
     """Test parsing of timing values."""

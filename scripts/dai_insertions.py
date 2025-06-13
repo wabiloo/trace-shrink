@@ -152,7 +152,7 @@ def scan_source_entries(reader: ProxymanLogV2Reader, host: str):
     counter = 0
     for entry in source_entries:
         print(f"Scanning entry: {entry.id} ({counter}/{total_entries})")
-        body = entry.response.body.text
+        body = entry.content
         if body:
             try:
                 playlist = m3u8.loads(body)
@@ -180,7 +180,7 @@ def scan_service_entries(reader: ProxymanLogV2Reader, host: str):
     counter = 0
     for entry in service_entries:
         print(f"Scanning entry: {entry.id} ({counter}/{total_entries})")
-        body = entry.response.body.text
+        body = entry.content
         if body:
             try:
                 playlist = m3u8.loads(body)

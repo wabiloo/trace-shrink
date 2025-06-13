@@ -21,7 +21,7 @@ from rich.table import Table
 from threefive import Cue, SegmentationDescriptor
 from yarl import URL
 
-from trace_shrink import HarEntry, HarReader
+from trace_shrink import HarEntry, HarReader, open_archive
 
 HAR_FILE = "/Users/fabrelambeau/Broadpeak/Projects/Altice-Prod/live-origin-bfmtv-fr-euw3.bfmtv.bct.nextradiotv.com_06-12-2025-10-07-16.har"
 
@@ -184,113 +184,12 @@ class PlaylistScanner:
         return None
 
 
-# def scan_manifest_entries(manifest_entries: list[HarEntry]) -> list[AdCollection]:
-#     ads = AdCollection()
-
-#     for entry in manifest_entries:
-#         print(f"Scanning entry {entry.id} @ {entry.timeline.request_start}")
-#         manifest_body = entry.response.body.text
-#         manifest_obj = m3u8.loads(manifest_body)
-
-#         current_break_id = None
-#         current_ad = None
-
-#         # We scan all segments and extract the original ads.
-#         segment: m3u8.Segment
-#         for i, segment in enumerate(manifest_obj.segments):
-#             # handling markers
-#             if segment.dateranges:
-#                 daterange: m3u8.DateRange
-#                 for daterange in segment.dateranges:
-#                     # convert the SCTE35 to a Cue
-#                     cue = Cue(daterange.scte35_cmd)
-
-#                     # record the current break id up to that segment
-#                     if not cue.descriptors:
-#                         continue
-
-#                     # detect the start and end of a break, and keep track of the current break id
-#                     breakstart_descriptor = next(
-#                         (d for d in cue.descriptors if d.segmentation_type_id == 34),
-#                         None,
-#                     )
-#                     if breakstart_descriptor:
-#                         current_break_id = int(
-#                             breakstart_descriptor.segmentation_event_id, 16
-#                         )
-
-#                     breakend_descriptor = next(
-#                         (d for d in cue.descriptors if d.segmentation_type_id == 35),
-#                         None,
-#                     )
-#                     if breakend_descriptor:
-#                         current_break_id = None
-
-#                     # detect the end of a previous ad
-#                     paend_descriptor = next(
-#                         (d for d in cue.descriptors if d.segmentation_type_id == 49),
-#                         None,
-#                     )
-#                     if paend_descriptor:
-#                         if current_ad:
-#                             current_ad.marker_end = datetime.fromisoformat(
-#                                 daterange.start_date
-#                             )
-#                         else:
-#                             # special case for RMC feed, with segment_num == 0 missing a PAStart
-#                             if paend_descriptor.segment_num == 0:
-#                                 current_ad = OriginalAd(
-#                                     id=int(paend_descriptor.segmentation_event_id, 16),
-#                                     daterange_id=daterange.id,
-#                                     first_appearance=entry.timeline.request_start,
-#                                     seg_num=paend_descriptor.segment_num,
-#                                     seg_total=paend_descriptor.segments_expected,
-#                                     marker_start=datetime.fromisoformat(
-#                                         daterange.start_date
-#                                     ),
-#                                     marker_end=datetime.fromisoformat(
-#                                         daterange.start_date
-#                                     ),
-#                                     segments=[manifest_obj.segments[i - 1]],
-#                                 )
-
-#                     # detect the start of an ad, and keep track of the current ad id.
-#                     # we assume that the PAEnd descriptor for the last ad is always
-#                     # on the same segment as the PAStart descriptor of the next one.
-#                     pastart_descriptor = next(
-#                         (d for d in cue.descriptors if d.segmentation_type_id == 48),
-#                         None,
-#                     )
-#                     if pastart_descriptor:
-#                         ad_id = int(pastart_descriptor.segmentation_event_id, 16)
-#                         current_ad = ads.get(ad_id)
-#                         if current_ad is None:
-#                             current_ad = OriginalAd(
-#                                 id=ad_id,
-#                                 daterange_id=daterange.id,
-#                                 first_appearance=entry.timeline.request_start,
-#                                 seg_num=pastart_descriptor.segment_num,
-#                                 seg_total=pastart_descriptor.segments_expected,
-#                                 marker_start=datetime.fromisoformat(
-#                                     daterange.start_date
-#                                 ),
-#                             )
-#                             current_ad.set_break_id(current_break_id)
-#                             ads.add_ad(current_ad)
-
-#             # handling segments
-#             if current_ad:
-#                 current_ad.add_segment(segment)
-
-#     return ads
-
-
 def collect_ads(manifest_entries: list[HarEntry]) -> AdCollection:
     ads = AdCollection()
 
     for entry in manifest_entries:
         print(f"Scanning entry {entry.id} @ {entry.timeline.request_start}")
-        manifest_body = entry.response.body.text
+        manifest_body = entry.content
         manifest_obj = m3u8.loads(manifest_body)
         playlist_scanner = PlaylistScanner(manifest_obj, entry.timeline.request_start)
         detected_ads = playlist_scanner.find_complete_ads()
@@ -361,28 +260,24 @@ def extract_ad_segments(ads: AdCollection, manifest_url: str, har_reader: HarRea
                 target_dir = Path("segments") / f"{ad.break_id}_{ad.id}_{ad.seg_num}"
                 target_dir.mkdir(parents=True, exist_ok=True)
                 with open(target_dir / f"{segment.uri}", "wb") as f:
-                    binary_data = segment_entries[0].response.body._get_decoded_body()
-                    if binary_data:
-                        f.write(binary_data)
-                    else:
-                        print(f"No binary data found for segment {segment.uri}")
+                    f.write(segment_entries[0].content)
             else:
                 print(f"Segment {segment.uri} not found")
 
 
 def main():
-    har_reader = HarReader(HAR_FILE)
+    archive_reader = open_archive(HAR_FILE)
 
-    manifest_urls = har_reader.get_abr_manifest_urls()
-    selected_manifest_url = manifest_urls[0].url
+    manifest_urls = archive_reader.get_abr_manifest_urls()
 
     # pick the first one. TODO - pick the best one.
-    manifest_entries = har_reader.get_entries_for_url(selected_manifest_url)
+    selected_manifest_url = manifest_urls[0].url
+    manifest_entries = archive_reader.get_entries_for_url(selected_manifest_url)
 
     detected_ads = collect_ads(manifest_entries)
     print_ads(detected_ads)
 
-    extract_ad_segments(detected_ads, selected_manifest_url, har_reader)
+    extract_ad_segments(detected_ads, selected_manifest_url, archive_reader)
 
 
 if __name__ == "__main__":
