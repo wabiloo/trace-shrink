@@ -31,5 +31,5 @@ jobs:
           restore-keys: |
             mkdocs-material-
       
-      - run: uv pip install -r pyproject.toml --group dev
+      - run: uv pip install -r pyproject.toml --group dev --system
       - run: mkdocs gh-deploy --force
