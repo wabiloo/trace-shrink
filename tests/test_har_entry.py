@@ -209,9 +209,9 @@ def test_har_get_raw_json(sample_har_entry):
 def test_har_str_repr(sample_har_entry):
     """Test string representation."""
     assert str(sample_har_entry).startswith(
-        "HarEntry(index-0 POST https://api.example.com/v1/data?param=value -> 201)"
+        "HarEntry(id=index-0 POST https://api.example.com/v1/data?param=value -> 201)"
     )
     assert (
         repr(sample_har_entry)
-        == "<HarEntry id=index-0 url=https://api.example.com/v1/data?param=value>"
+        == "<HarEntry id=index-0 POST https://api.example.com/v1/data?param=value -> 201>"
     )

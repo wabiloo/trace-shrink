@@ -18,12 +18,20 @@ MIME_TYPES = {
 }
 
 
+def _extract_mime_type(mime_type: str) -> str:
+    return mime_type.split(";")[0].strip()
+
+
 def is_mime_type(mime_type: str, mime_type_key: str) -> bool:
-    return mime_type in MIME_TYPES[mime_type_key]
+    return _extract_mime_type(mime_type) in MIME_TYPES[mime_type_key]
 
 
 def is_dash_mime_type(mime_type: str) -> bool:
     return is_mime_type(mime_type, "DASH")
+
+
+def is_hls_mime_type(mime_type: str) -> bool:
+    return is_mime_type(mime_type, "HLS")
 
 
 def is_abr_mime_type(mime_type: str) -> bool:
@@ -31,11 +39,13 @@ def is_abr_mime_type(mime_type: str) -> bool:
 
 
 def is_string_content(mime_type: str) -> bool:
+    mime_type = _extract_mime_type(mime_type)
     # check if the mime type is a content-type for HLS or DASH formats, based on the MIME_TYPES dictionary
     return any(mime_type in mime_types for mime_types in MIME_TYPES.values())
 
 
 def get_abr_format_from_mime_type(mime_type: str) -> str:
+    mime_type = _extract_mime_type(mime_type)
     if is_mime_type(mime_type, Format.HLS):
         return Format.HLS
     elif is_mime_type(mime_type, Format.DASH):

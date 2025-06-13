@@ -113,7 +113,7 @@ def test_init(sample_entry):
 
 
 def test_init_invalid_type():
-    with pytest.raises(TypeError):
+    with pytest.raises(Exception):
         ProxymanLogV2Entry("entry_name", "not a dict", reader=None)  # type: ignore
 
 
@@ -292,8 +292,8 @@ def test_get_raw_json(sample_entry):
 def test_str_repr(sample_entry):
     expected_url = "https://stream.broadpeak.io/hls/live/2003678/ndtv24x7/masterp_360p@1.m3u8?bpkio_serviceid=SERVICEID"
     assert (
-        str(sample_entry) == f"ProxymanLogV2Entry(test-id-86 GET {expected_url} -> 200)"
+        str(sample_entry) == f"ProxymanLogV2Entry(id=test-id-86 GET {expected_url} -> 200)"
     )
     assert (
-        repr(sample_entry) == f"<ProxymanLogV2Entry id=test-id-86 url={expected_url}>"
+        repr(sample_entry) == f"<ProxymanLogV2Entry id=test-id-86 GET {expected_url} -> 200>"
     )

@@ -18,6 +18,8 @@ from .trace_entry import (
 
 
 class _HarRequestDetails(RequestDetails):
+    """Implementation of RequestDetails for a HAR entry."""
+
     def __init__(
         self, har_entry_request_data: Dict[str, Any], parent_entry: "HarEntry"
     ):
@@ -49,6 +51,8 @@ class _HarRequestDetails(RequestDetails):
 
 
 class _HarResponseBodyDetails(ResponseBodyDetails):
+    """Implementation of ResponseBodyDetails for a HAR entry."""
+
     def __init__(
         self, har_entry_response_content_data: Dict[str, Any], parent_entry: "HarEntry"
     ):
@@ -182,6 +186,8 @@ class _HarResponseBodyDetails(ResponseBodyDetails):
 
 
 class _HarResponseDetails(ResponseDetails):
+    """Implementation of ResponseDetails for a HAR entry."""
+
     def __init__(
         self, har_entry_response_data: Dict[str, Any], parent_entry: "HarEntry"
     ):
@@ -221,6 +227,8 @@ class _HarResponseDetails(ResponseDetails):
 
 
 class _HarTimelineDetails(TimelineDetails):
+    """Implementation of TimelineDetails for a HAR entry."""
+
     def __init__(self, started_date_time: str, duration_ms: float):
         self._started_date_time = started_date_time
         self._duration_ms = duration_ms
@@ -250,63 +258,80 @@ class _HarTimelineDetails(TimelineDetails):
 
 
 class HarEntry(TraceEntry):
+    """
+    Represents a single entry in a HAR file, providing access to request,
+    response, and timeline details.
+    """
+
     def __init__(self, har_entry_data: Dict[str, Any], reader: Any, entry_index: int):
+        """
+        Initializes a HarEntry.
+
+        Args:
+            har_entry_data: The raw dictionary for the HAR entry.
+            reader: The HarReader instance that this entry belongs to.
+            entry_index: The index of this entry within the HAR file.
+        """
         self._raw_data = har_entry_data
         self._reader = reader
-        self._entry_index = entry_index  # Store index for a more stable ID
-
-        self._request_details = _HarRequestDetails(
-            self._raw_data.get("request", {}), self
-        )
-        self._response_details = _HarResponseDetails(
-            self._raw_data.get("response", {}), self
-        )
-        # Pass self to _HarTimelineDetails if it needs to access parent HarEntry.time
-        self._timeline_details = _HarTimelineDetails(
-            self._raw_data.get("startedDateTime", ""),
-            self._raw_data.get("time", 0),
+        self._index = entry_index
+        self._request = _HarRequestDetails(self._raw_data.get("request", {}), self)
+        self._response = _HarResponseDetails(self._raw_data.get("response", {}), self)
+        self._timeline = _HarTimelineDetails(
+            self._raw_data.get("startedDateTime"), self._raw_data.get("time")
         )
 
     @property
     def index(self) -> int:
-        return self._entry_index
+        """The zero-based index of the entry in the archive."""
+        return self._index
 
     @property
     def id(self) -> str:
-        if self._raw_data.get("_id"):
-            return self._raw_data.get("_id")
-        # Use the index provided by the reader for a stable, unique ID within the HAR file.
-        # startedDateTime can be non-unique if multiple requests start at the exact same millisecond.
-        return f"index-{self._entry_index}"
+        """
+        A unique identifier for the entry, if available.
+        In HAR, this can be a custom field, but is not standard.
+        Falls back to the entry's index as a string.
+        """
+        # HAR does not have a standard entry ID like proxyman.
+        # Check for a common custom field `_id` or `id`.
+        return self._raw_data.get(
+            "_id", self._raw_data.get("id", f"index-{self.index}")
+        )
 
     @property
     def request(self) -> RequestDetails:
-        return self._request_details
+        """Details of the HTTP request."""
+        return self._request
 
     @property
     def response(self) -> ResponseDetails:
-        return self._response_details
+        """Details of the HTTP response."""
+        return self._response
 
     @property
     def comment(self) -> Optional[str]:
+        """An optional comment for the entry."""
         return self._raw_data.get("comment")
 
     @property
     def timeline(self) -> TimelineDetails:
-        return self._timeline_details
+        """Timeline details of the HTTP exchange."""
+        return self._timeline
 
     def get_raw_json(self) -> Dict[str, Any]:
+        """Returns the raw JSON data for this entry."""
         return self._raw_data
 
     @property
     def time(
         self,
     ) -> Optional[float]:  # Total time for the entry in milliseconds from HAR spec
-        t = self._raw_data.get("time", -1)
-        return t if isinstance(t, (int, float)) and t >= 0 else None
+        """Total time for the entry in milliseconds from the HAR spec."""
+        return self._raw_data.get("time")
 
     def __str__(self) -> str:
-        return f"HarEntry({self.id} {self.request.method} {str(self.request.url)} -> {self.response.status_code})"
+        return f"HarEntry(id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code})"
 
     def __repr__(self) -> str:
-        return f"<HarEntry id={self.id} url={str(self.request.url)}>"
+        return f"<HarEntry id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code}>"
