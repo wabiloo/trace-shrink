@@ -29,6 +29,7 @@ class ProxymanLogV2Reader(ArchiveReader):
             ValueError: If the file is not a valid zip archive.
             RuntimeError: For other unexpected errors during initialization.
         """
+        super().__init__()
         self.log_file_path = log_file_path
         if not os.path.exists(self.log_file_path):
             raise FileNotFoundError(f"Log file not found: {self.log_file_path}")

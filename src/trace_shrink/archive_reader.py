@@ -2,7 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import yarl
@@ -34,6 +34,10 @@ class ArchiveReader(ABC):
     `open_archive(path)` factory function provided by the package.
     """
 
+    def __init__(self):
+        self._url_index: Optional[Dict[str, List[TraceEntry]]] = None
+        self._path_index: Optional[Dict[str, List[TraceEntry]]] = None
+
     @property
     @abstractmethod
     def entries(self) -> List[TraceEntry]:
@@ -56,40 +60,70 @@ class ArchiveReader(ABC):
         """
         pass
 
+    def _build_url_index(self) -> Dict[str, List[TraceEntry]]:
+        """
+        Builds an index mapping URLs to entries for fast lookups.
+        This is cached after the first call.
+        """
+        if self._url_index is None:
+            self._url_index = {}
+            for entry in self.entries:
+                url_str = str(entry.request.url)
+                if url_str not in self._url_index:
+                    self._url_index[url_str] = []
+                self._url_index[url_str].append(entry)
+        return self._url_index
+
+    def _build_path_index(self) -> Dict[str, List[TraceEntry]]:
+        """
+        Builds an index mapping URL paths to entries for fast lookups.
+        This is cached after the first call.
+        """
+        if self._path_index is None:
+            self._path_index = {}
+            for entry in self.entries:
+                path = entry.request.url.path
+                if path not in self._path_index:
+                    self._path_index[path] = []
+                self._path_index[path].append(entry)
+        return self._path_index
+
     def get_entries_for_url(self, url: str | yarl.URL) -> List[TraceEntry]:
         """
-        Retrieves entries for a specific URL.
+        Retrieves entries for a specific URL using a fast indexed lookup.
         """
-        matching_entries: List[TraceEntry] = []
-        for entry in self:
-            if str(entry.request.url) == str(url):
-                matching_entries.append(entry)
-        return matching_entries
+        url_index = self._build_url_index()
+        return url_index.get(str(url), [])
 
     def get_entries_by_path(self, path: str) -> List[TraceEntry]:
         """
-        Retrieves entries for a specific path.
+        Retrieves entries for a specific path using a fast indexed lookup.
         """
-        matching_entries: List[TraceEntry] = []
-        for entry in self:
-            if entry.request.url.path == path:
-                matching_entries.append(entry)
-        return matching_entries
+        path_index = self._build_path_index()
+        return path_index.get(path, [])
 
     def get_entries_for_partial_url(
         self, url_pattern: str | re.Pattern
     ) -> List[TraceEntry]:
         """
         Retrieves entries whose request URL matches the given pattern.
+        Uses optimized searching when possible.
         """
         matching_entries: List[TraceEntry] = []
-        for entry in self:
-            if isinstance(url_pattern, re.Pattern):
-                if url_pattern.search(str(entry.request.url)):
-                    matching_entries.append(entry)
-            else:
-                if url_pattern in str(entry.request.url):
-                    matching_entries.append(entry)
+
+        if isinstance(url_pattern, re.Pattern):
+            # For regex patterns, we need to scan all URLs
+            url_index = self._build_url_index()
+            for url_str, entries in url_index.items():
+                if url_pattern.search(url_str):
+                    matching_entries.extend(entries)
+        else:
+            # For string patterns, we can optimize by scanning the index keys first
+            url_index = self._build_url_index()
+            for url_str, entries in url_index.items():
+                if url_pattern in url_str:
+                    matching_entries.extend(entries)
+
         return matching_entries
 
     def filter(
@@ -119,7 +153,7 @@ class ArchiveReader(ABC):
             A list of CaptureEntry objects that satisfy all provided filter criteria.
         """
         filtered_entries: List[TraceEntry] = []
-        for entry in self:  # Relies on __iter__
+        for entry in self.entries:
             # Host filter
             if host is not None:
                 try:
@@ -195,7 +229,7 @@ class ArchiveReader(ABC):
         if isinstance(format, str):
             format = Format(format)
         urls = []
-        for entry in self:
+        for entry in self.entries:
             abr_format = Format.from_url_or_mime_type(
                 entry.response.mime_type, entry.request.url
             )

@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 import yarl
 
-from trace_shrink.formats import Format
 from trace_shrink.archive_reader import ArchiveReader, DecoratedUrl
+from trace_shrink.formats import Format
 from trace_shrink.har_reader import HarReader
 from trace_shrink.trace_entry import RequestDetails, ResponseDetails, TraceEntry
 
@@ -14,6 +14,7 @@ from trace_shrink.trace_entry import RequestDetails, ResponseDetails, TraceEntry
 # Concrete implementation of ArchiveReader for testing
 class MockArchiveReader(ArchiveReader):
     def __init__(self, entries: list[TraceEntry]):
+        super().__init__()  # Initialize parent class to set up indexes
         self._entries = entries
 
     @property

@@ -23,6 +23,7 @@ class HarReader(ArchiveReader):
             FileNotFoundError: If the HAR file does not exist.
             ValueError: If the file content is not valid JSON or not a HAR structure.
         """
+        super().__init__()
         self.har_file_path = har_file_path
         self._entries: List[HarEntry] = []
         self._raw_har_data: Optional[Dict[str, Any]] = None
