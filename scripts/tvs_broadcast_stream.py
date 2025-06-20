@@ -7,8 +7,12 @@ The PlaylistScanner class is used to identify and extractcomplete ads within the
 The analysis outputs a table of ads, and compares the marker start and end with the actual start and end of the ad (from the segments PDT).
 
 The script then extracts the segments to files, with a separate directory for each ad.
+
+⚠️ This script requires some packages not part of the trace-shrink package. 
+You must install them manually, eg. `uv pip install m3u8 threefive rich`
 """
 
+import argparse
 import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -22,8 +26,6 @@ from threefive import Cue, SegmentationDescriptor
 from yarl import URL
 
 from trace_shrink import HarEntry, HarReader, open_archive
-
-HAR_FILE = "/Users/fabrelambeau/Broadpeak/Projects/Altice-Prod/live-origin-bfmtv-fr-euw3.bfmtv.bct.nextradiotv.com_06-12-2025-10-07-16.har"
 
 console = Console()
 
@@ -188,8 +190,9 @@ def collect_ads(manifest_entries: list[HarEntry]) -> AdCollection:
     ads = AdCollection()
 
     for entry in manifest_entries:
-        print(f"Scanning entry {entry.id} @ {entry.timeline.request_start}")
+        # print(f"Scanning entry {entry.id} @ {entry.timeline.request_start}")
         manifest_body = entry.content
+
         manifest_obj = m3u8.loads(manifest_body)
         playlist_scanner = PlaylistScanner(manifest_obj, entry.timeline.request_start)
         detected_ads = playlist_scanner.find_complete_ads()
@@ -247,14 +250,16 @@ def print_ads(ads: AdCollection):
     console.print(table)
 
 
-def extract_ad_segments(ads: AdCollection, manifest_url: str, har_reader: HarReader):
+def extract_ad_segments(ads: AdCollection, manifest_url: str, archive_reader):
     for ad in ads:
         print(f"Extracting segments for ad {ad.id}")
         for segment in ad.segments:
             # resolve the segment uri based on the manifest url
             segment_url = manifest_url.join(URL(segment.uri))
-            # find it in the har entries
-            segment_entries = har_reader.get_entries_for_url(segment_url)
+
+            # Fast lookup using the archive reader's indexed method
+            segment_entries = archive_reader.get_entries_for_url(segment_url)
+
             if segment_entries:
                 # save the segment to a file
                 target_dir = Path("segments") / f"{ad.break_id}_{ad.id}_{ad.seg_num}"
@@ -266,18 +271,53 @@ def extract_ad_segments(ads: AdCollection, manifest_url: str, har_reader: HarRea
 
 
 def main():
-    archive_reader = open_archive(HAR_FILE)
+    parser = argparse.ArgumentParser(
+        description="Analyze ads in TV Segmentée stream from HAR/Proxyman files"
+    )
+    parser.add_argument("har_file", help="Path to the HAR or Proxyman log file")
+    args = parser.parse_args()
+
+    archive_reader = open_archive(args.har_file)
+    print(f"Archive loaded with {len(archive_reader)} total entries")
 
     manifest_urls = archive_reader.get_abr_manifest_urls()
+    print(f"Found {len(manifest_urls)} manifest URLs:")
+    for i, manifest_url in enumerate(manifest_urls):
+        print(f"  {i}: {manifest_url.url} ({manifest_url.format})")
 
-    # pick the first one. TODO - pick the best one.
-    selected_manifest_url = manifest_urls[0].url
+    if not manifest_urls:
+        print("No manifest URLs found! Exiting.")
+        return
+
+    # Find the manifest with the most entries (most active)
+    print("\nAnalyzing manifests to find the most active one...")
+    best_manifest_url = None
+    max_entries = 0
+
+    for i, manifest_url in enumerate(manifest_urls):
+        entries = archive_reader.get_entries_for_url(manifest_url.url)
+        entry_count = len(entries)
+        print(f"  Manifest {i}: {entry_count} entries")
+
+        if entry_count > max_entries:
+            max_entries = entry_count
+            best_manifest_url = manifest_url.url
+
+    selected_manifest_url = best_manifest_url
+    print(
+        f"\nSelected manifest URL (most active with {max_entries} entries): {selected_manifest_url}"
+    )
+
     manifest_entries = archive_reader.get_entries_for_url(selected_manifest_url)
 
     detected_ads = collect_ads(manifest_entries)
+    print(f"Detected {len(detected_ads)} ads total")
     print_ads(detected_ads)
 
-    extract_ad_segments(detected_ads, selected_manifest_url, archive_reader)
+    if detected_ads:
+        extract_ad_segments(detected_ads, selected_manifest_url, archive_reader)
+    else:
+        print("No ads detected, skipping segment extraction.")
 
 
 if __name__ == "__main__":
