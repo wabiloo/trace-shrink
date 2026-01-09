@@ -1,5 +1,5 @@
 site_name: trace-shrink
-site_description: A tool to analyze captures of ABR streams, from HAR files or Proxyman logs.
+site_description: A tool to analyze captures of ABR streams, from HAR files, Proxyman logs, or Bodylogger files.
 repo_url: https://github.com/wabiloo/trace-shrink
 repo_name: wabiloo/trace-shrink
 
