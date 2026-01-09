@@ -264,5 +264,11 @@ class ArchiveReader(ABC):
                 continue
             if format is not None and abr_format != format:
                 continue
+
+            # skip session tracking (bk-ml query param)
+            # TODO - generalise
+            if entry.request.url.query.get("bk-ml") is not None:
+                continue
+
             urls.append(DecoratedUrl(entry.request.url, abr_format.value))
         return list(set(urls))
