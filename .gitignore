@@ -16,3 +16,5 @@ wheels/
 .vscode/
 .env
 segments
+samples
+scripts
