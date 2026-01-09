@@ -408,3 +408,197 @@ class HarEntry(TraceEntry):
 
     def __repr__(self) -> str:
         return f"<HarEntry id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code}>"
+
+    @classmethod
+    def from_trace_entry(cls, entry: TraceEntry, entry_index: int = 0) -> Dict[str, Any]:
+        """
+        Create a HAR entry dictionary from a TraceEntry.
+
+        Args:
+            entry: The TraceEntry to convert.
+            entry_index: The index of the entry (for ID generation if needed).
+
+        Returns:
+            Dictionary representing a HAR entry.
+        """
+        timeline = entry.timeline
+        request_start = timeline.request_start
+
+        # Calculate duration in milliseconds
+        duration_ms = 0.0
+        if request_start and timeline.response_end:
+            duration_ms = (
+                timeline.response_end - request_start
+            ).total_seconds() * 1000.0
+
+        # Format startedDateTime as ISO 8601 string
+        started_date_time = (
+            request_start.isoformat() if request_start else datetime.now().isoformat()
+        )
+
+        # Convert headers
+        request_headers = [
+            {"name": name, "value": value}
+            for name, value in entry.request.headers.items()
+        ]
+        response_headers = [
+            {"name": name, "value": value}
+            for name, value in entry.response.headers.items()
+        ]
+
+        # Parse query string
+        query_params = []
+        for name, value in entry.request.url.query.items():
+            query_params.append({"name": name, "value": value})
+
+        # Build request object
+        request_obj: Dict[str, Any] = {
+            "method": entry.request.method,
+            "url": str(entry.request.url),
+            "httpVersion": "HTTP/1.1",
+            "headers": request_headers,
+            "queryString": query_params,
+            "cookies": [],
+            "headersSize": sum(
+                len(name) + len(value) + 4
+                for name, value in entry.request.headers.items()
+            ),
+            "bodySize": 0,
+        }
+
+        # Build response content
+        response_body = entry.response.body
+        content_text = response_body.text
+        content_size = response_body.raw_size or 0
+        compressed_size = response_body.compressed_size or content_size
+
+        # Determine if body should be base64 encoded
+        is_binary = False
+        if content_text is None:
+            try:
+                content = entry.content
+                if isinstance(content, bytes):
+                    content_text = base64.b64encode(content).decode("utf-8")
+                    is_binary = True
+                elif isinstance(content, str):
+                    content_text = content
+                else:
+                    content_text = ""
+            except Exception:
+                content_text = ""
+        else:
+            mime_type = entry.response.mime_type or ""
+            if not cls._is_text_content_for_har(mime_type, content_text):
+                try:
+                    content_bytes = content_text.encode("utf-8")
+                    content_text = base64.b64encode(content_bytes).decode("utf-8")
+                    is_binary = True
+                except Exception:
+                    pass
+
+        content_obj: Dict[str, Any] = {
+            "size": content_size,
+            "mimeType": entry.response.content_type or "",
+        }
+
+        if is_binary:
+            content_obj["encoding"] = "base64"
+            content_obj["text"] = content_text
+        else:
+            content_obj["text"] = content_text
+            content_obj["compression"] = max(0, content_size - compressed_size)
+
+        # Build response object
+        response_obj: Dict[str, Any] = {
+            "status": entry.response.status_code,
+            "statusText": cls._get_status_text(entry.response.status_code),
+            "httpVersion": "HTTP/1.1",
+            "headers": response_headers,
+            "cookies": [],
+            "content": content_obj,
+            "redirectURL": "",
+            "headersSize": sum(
+                len(name) + len(value) + 4
+                for name, value in entry.response.headers.items()
+            ),
+            "bodySize": compressed_size,
+        }
+
+        # Build timings
+        timings = {
+            "blocked": -1,
+            "dns": -1,
+            "connect": -1,
+            "send": -1,
+            "wait": -1,
+            "receive": -1,
+        }
+
+        if request_start and timeline.response_start and timeline.response_end:
+            if timeline.request_end:
+                send_time = (
+                    timeline.request_end - request_start
+                ).total_seconds() * 1000
+                timings["send"] = max(0, send_time)
+            if timeline.response_start:
+                wait_time = (
+                    timeline.response_start - (timeline.request_end or request_start)
+                ).total_seconds() * 1000
+                timings["wait"] = max(0, wait_time)
+            if timeline.response_end:
+                receive_time = (
+                    timeline.response_end - timeline.response_start
+                ).total_seconds() * 1000
+                timings["receive"] = max(0, receive_time)
+
+        har_entry: Dict[str, Any] = {
+            "startedDateTime": started_date_time,
+            "time": duration_ms,
+            "request": request_obj,
+            "response": response_obj,
+            "cache": {},
+            "timings": timings,
+        }
+
+        if entry.comment:
+            har_entry["comment"] = entry.comment
+
+        entry_id = entry.id
+        if entry_id and not entry_id.startswith("index-"):
+            har_entry["_id"] = entry_id
+
+        return har_entry
+
+    @staticmethod
+    def _is_text_content_for_har(mime_type: str, content: str) -> bool:
+        """Determine if content should be treated as text for HAR format."""
+        text_types = [
+            "text/",
+            "application/json",
+            "application/xml",
+            "application/javascript",
+            "application/vnd.apple.mpegurl",
+            "application/dash+xml",
+        ]
+        mime_lower = mime_type.lower()
+        return any(mime_lower.startswith(prefix) for prefix in text_types)
+
+    @staticmethod
+    def _get_status_text(status_code: int) -> str:
+        """Get HTTP status text for a status code."""
+        status_texts = {
+            200: "OK",
+            201: "Created",
+            204: "No Content",
+            301: "Moved Permanently",
+            302: "Found",
+            304: "Not Modified",
+            400: "Bad Request",
+            401: "Unauthorized",
+            403: "Forbidden",
+            404: "Not Found",
+            500: "Internal Server Error",
+            502: "Bad Gateway",
+            503: "Service Unavailable",
+        }
+        return status_texts.get(status_code, "Unknown")

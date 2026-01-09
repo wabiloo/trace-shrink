@@ -1,7 +1,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from yarl import URL
 
@@ -451,3 +451,161 @@ class ProxymanLogV2Entry(TraceEntry):
         Provides a detailed, unambiguous string representation for developers.
         """
         return f"<ProxymanLogV2Entry id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code}>"
+
+    @classmethod
+    def from_trace_entry(
+        cls, entry: TraceEntry, index: int = 0
+    ) -> Tuple[Dict[str, Any], str]:
+        """
+        Create a Proxyman entry dictionary and filename from a TraceEntry.
+
+        Args:
+            entry: The TraceEntry to convert.
+            index: The index of the entry (used in filename).
+
+        Returns:
+            Tuple of (entry_data_dict, filename).
+        """
+        timeline = entry.timeline
+        url = entry.request.url
+
+        # Parse URL components
+        scheme = url.scheme or "http"
+        host = url.host or ""
+        port = url.port
+        uri = url.path_qs
+
+        # Build request headers
+        request_header_entries = [
+            {
+                "key": {"name": name, "nameInLowercase": name.lower()},
+                "value": value,
+                "isEnabled": True,
+            }
+            for name, value in entry.request.headers.items()
+        ]
+
+        # Build request object
+        request_obj: Dict[str, Any] = {
+            "host": host,
+            "port": port if port else (443 if scheme == "https" else 80),
+            "isSSL": scheme == "https",
+            "method": {"name": entry.request.method},
+            "scheme": scheme,
+            "fullPath": str(url),
+            "uri": uri,
+            "version": {"major": 1, "minor": 1},
+            "header": {"entries": request_header_entries},
+            "bodyData": "",
+            "compressedBodyDataCount": 0,
+            "isWebSocketUpgrade": False,
+        }
+
+        # Build response headers
+        response_header_entries = [
+            {
+                "key": {"name": name, "nameInLowercase": name.lower()},
+                "value": value,
+                "isEnabled": True,
+            }
+            for name, value in entry.response.headers.items()
+        ]
+
+        # Build response body
+        response_body = entry.response.body
+        body_size = response_body.raw_size or 0
+        body_encoded_size = response_body.compressed_size or body_size
+
+        body_data_b64 = ""
+        try:
+            content = entry.content
+            if isinstance(content, bytes):
+                body_data_b64 = base64.b64encode(content).decode("utf-8")
+            elif isinstance(content, str):
+                body_data_b64 = base64.b64encode(content.encode("utf-8")).decode("utf-8")
+        except Exception:
+            if response_body.text is not None:
+                try:
+                    body_data_b64 = base64.b64encode(
+                        response_body.text.encode("utf-8")
+                    ).decode("utf-8")
+                except Exception:
+                    pass
+
+        # Build response object
+        response_obj: Dict[str, Any] = {
+            "status": {
+                "code": entry.response.status_code,
+                "phrase": cls._get_status_text(entry.response.status_code),
+                "strict": False,
+            },
+            "version": {"major": 1, "minor": 1},
+            "header": {"entries": response_header_entries},
+            "bodyData": body_data_b64,
+            "bodySize": body_size,
+            "bodyEncodedSize": body_encoded_size,
+            "compressedBodyDataCount": body_encoded_size,
+            "createdAt": (
+                timeline.response_end.timestamp()
+                if timeline.response_end
+                else datetime.now().timestamp()
+            ),
+            "error": None,
+        }
+
+        # Build timing object
+        timing_obj: Dict[str, float] = {}
+        if timeline.request_start:
+            timing_obj["requestStartedAt"] = timeline.request_start.timestamp()
+        if timeline.request_end:
+            timing_obj["requestEndedAt"] = timeline.request_end.timestamp()
+        if timeline.response_start:
+            timing_obj["responseStartedAt"] = timeline.response_start.timestamp()
+        if timeline.response_end:
+            timing_obj["responseEndedAt"] = timeline.response_end.timestamp()
+
+        # Build entry ID
+        entry_id = entry.id
+        if entry_id.startswith("index-"):
+            entry_id = f"entry_{index}"
+
+        # Build the complete entry
+        proxyman_entry: Dict[str, Any] = {
+            "id": entry_id,
+            "name": entry_id,
+            "request": request_obj,
+            "response": response_obj,
+            "timing": timing_obj,
+            "isSSL": scheme == "https",
+            "isIntercepted": True,
+            "isRelayed": False,
+            "isFromFile": False,
+            "timezone": "GMT",
+        }
+
+        if entry.comment:
+            proxyman_entry["notes"] = entry.comment
+
+        filename = f"request_{index}_{entry_id}"
+
+        return proxyman_entry, filename
+
+    @staticmethod
+    def _get_status_text(status_code: int) -> str:
+        """Get HTTP status text for a status code."""
+        status_texts = {
+            200: "OK",
+            201: "Created",
+            204: "No Content",
+            301: "Moved Permanently",
+            302: "Found",
+            304: "Not Modified",
+            400: "Bad Request",
+            401: "Unauthorized",
+            403: "Forbidden",
+            404: "Not Found",
+            500: "Internal Server Error",
+            502: "Bad Gateway",
+            503: "Service Unavailable",
+        }
+        return status_texts.get(status_code, "Unknown")

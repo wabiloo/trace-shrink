@@ -3,6 +3,7 @@ ABR Capture Inspector Library
 """
 
 from .archive_reader import ArchiveReader
+from .exporter import Exporter
 from .har_entry import HarEntry
 from .har_reader import HarReader
 from .manifest_stream import ManifestStream
@@ -30,4 +31,5 @@ __all__ = [
     "HarEntry",
     "ManifestStream",
     "open_archive",
+    "Exporter",
 ]
