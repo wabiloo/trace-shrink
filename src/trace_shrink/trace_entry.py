@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, Optional, Union  # Add yarl.URL later
+from typing import Dict, Optional  # Add yarl.URL later
 
 import yarl
 
@@ -144,6 +144,12 @@ class TraceEntry(ABC):
     @abstractmethod
     def comment(self) -> Optional[str]:
         """An optional comment for the entry."""
+        pass
+
+    @property
+    @abstractmethod
+    def highlight(self) -> Optional[str]:
+        """An optional highlight style for the entry (e.g., 'red', 'yellow', 'strike')."""
         pass
 
     @property

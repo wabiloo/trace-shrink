@@ -44,7 +44,7 @@ SAMPLE_ENTRY_DATA = {
         "bodyEncodedSize": 105,
     },
     "id": "test-id-86",  # Proxyman's top-level ID for the entry
-    "notes": "This is a sample entry comment.",
+    "style": {"comment": "This is a sample entry comment."},
     "timing": {  # Basic timing data for placeholder tests
         "startDate": "2024-05-15T10:00:00.000Z",
         "endDate": "2024-05-15T10:00:01.500Z",
@@ -270,7 +270,16 @@ def test_comment_property(sample_entry):
 
 def test_comment_property_missing():
     data_no_comment = SAMPLE_ENTRY_DATA.copy()
-    del data_no_comment["notes"]
+    # Remove style.comment if it exists
+    if "style" in data_no_comment:
+        style = data_no_comment["style"].copy()
+        style.pop("comment", None)
+        if style:
+            data_no_comment["style"] = style
+        else:
+            del data_no_comment["style"]
+    # Also remove notes for backward compatibility test
+    data_no_comment.pop("notes", None)
     entry = ProxymanLogV2Entry("no_comment_entry", data_no_comment, reader=None)
     assert entry.comment is None
 

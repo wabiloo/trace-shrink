@@ -1,10 +1,10 @@
 import base64
-import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from yarl import URL
 
+from .highlight import HIGHLIGHT_COLOR_MAP, validate_highlight
 from .trace_entry import (
     RequestDetails,
     ResponseBodyDetails,
@@ -318,9 +318,31 @@ class ProxymanLogV2Entry(TraceEntry):
     @property
     def comment(self) -> Optional[str]:
         """An optional comment for the entry."""
-        # Proxyman doesn't have a standard 'comment' field per entry in the JSON structure.
-        # It has a 'notes' field which might be user-added.
+        # Proxyman stores comments in style.comment
+        style = self._raw_data.get("style", {})
+        if isinstance(style, dict):
+            comment = style.get("comment")
+            if comment:
+                return comment
+        # Fallback to 'notes' for backward compatibility with older files
         return self._raw_data.get("notes")
+
+    @property
+    def highlight(self) -> Optional[str]:
+        """An optional highlight style for the entry."""
+        style = self._raw_data.get("style", {})
+        if isinstance(style, dict):
+            # Check for strike-through first
+            if "textStyle" in style and style.get("textStyle") == 0:
+                return "strike"
+            # Check for color
+            if "color" in style:
+                color_int = style["color"]
+                # Convert color int back to string
+                for color_name, color_val in HIGHLIGHT_COLOR_MAP.items():
+                    if color_val == color_int:
+                        return color_name
+        return None
 
     @property
     def timeline(self) -> TimelineDetails:
@@ -340,7 +362,9 @@ class ProxymanLogV2Entry(TraceEntry):
         Args:
             comment: The comment text to add to this entry.
         """
-        self._raw_data["notes"] = comment
+        if "style" not in self._raw_data:
+            self._raw_data["style"] = {}
+        self._raw_data["style"]["comment"] = comment
 
     def add_response_header(self, name: str, value: str) -> None:
         """
@@ -411,17 +435,10 @@ class ProxymanLogV2Entry(TraceEntry):
         Raises:
             ValueError: If an invalid highlight value is provided.
         """
+        validate_highlight(highlight)
+
         if "style" not in self._raw_data:
             self._raw_data["style"] = {}
-
-        color_map = {
-            "red": 0,
-            "yellow": 1,
-            "green": 2,
-            "blue": 3,
-            "purple": 4,
-            "grey": 5,
-        }
 
         if highlight == "strike":
             # Set textStyle to 0 for strike-through
@@ -429,18 +446,12 @@ class ProxymanLogV2Entry(TraceEntry):
             # Remove color if it exists
             if "color" in self._raw_data["style"]:
                 del self._raw_data["style"]["color"]
-        elif highlight in color_map:
+        elif highlight in HIGHLIGHT_COLOR_MAP:
             # Set color value
-            self._raw_data["style"]["color"] = color_map[highlight]
+            self._raw_data["style"]["color"] = HIGHLIGHT_COLOR_MAP[highlight]
             # Remove textStyle if it exists
             if "textStyle" in self._raw_data["style"]:
                 del self._raw_data["style"]["textStyle"]
-        else:
-            valid_values = list(color_map.keys()) + ["strike"]
-            raise ValueError(
-                f"Invalid highlight value '{highlight}'. "
-                f"Valid values are: {', '.join(valid_values)}"
-            )
 
     def __str__(self) -> str:
         """Provides a user-friendly string representation."""
@@ -522,7 +533,9 @@ class ProxymanLogV2Entry(TraceEntry):
             if isinstance(content, bytes):
                 body_data_b64 = base64.b64encode(content).decode("utf-8")
             elif isinstance(content, str):
-                body_data_b64 = base64.b64encode(content.encode("utf-8")).decode("utf-8")
+                body_data_b64 = base64.b64encode(content.encode("utf-8")).decode(
+                    "utf-8"
+                )
         except Exception:
             if response_body.text is not None:
                 try:
@@ -557,10 +570,23 @@ class ProxymanLogV2Entry(TraceEntry):
         timing_obj: Dict[str, float] = {}
         if timeline.request_start:
             timing_obj["requestStartedAt"] = timeline.request_start.timestamp()
-        if timeline.request_end:
-            timing_obj["requestEndedAt"] = timeline.request_end.timestamp()
-        if timeline.response_start:
-            timing_obj["responseStartedAt"] = timeline.response_start.timestamp()
+
+        # Safely get request_end (may raise NotImplementedError for HAR entries)
+        try:
+            request_end = timeline.request_end
+            if request_end:
+                timing_obj["requestEndedAt"] = request_end.timestamp()
+        except NotImplementedError:
+            pass
+
+        # Safely get response_start (may raise NotImplementedError for HAR entries)
+        try:
+            response_start = timeline.response_start
+            if response_start:
+                timing_obj["responseStartedAt"] = response_start.timestamp()
+        except NotImplementedError:
+            pass
+
         if timeline.response_end:
             timing_obj["responseEndedAt"] = timeline.response_end.timestamp()
 
@@ -583,8 +609,23 @@ class ProxymanLogV2Entry(TraceEntry):
             "timezone": "GMT",
         }
 
+        # Handle comment
         if entry.comment:
-            proxyman_entry["notes"] = entry.comment
+            proxyman_entry["style"] = proxyman_entry.get("style", {})
+            proxyman_entry["style"]["comment"] = entry.comment
+
+        # Handle highlight
+        if entry.highlight:
+            highlight = entry.highlight
+            proxyman_entry["style"] = proxyman_entry.get("style", {})
+            if highlight == "strike":
+                proxyman_entry["style"]["textStyle"] = 0
+                if "color" in proxyman_entry["style"]:
+                    del proxyman_entry["style"]["color"]
+            elif highlight in HIGHLIGHT_COLOR_MAP:
+                proxyman_entry["style"]["color"] = HIGHLIGHT_COLOR_MAP[highlight]
+                if "textStyle" in proxyman_entry["style"]:
+                    del proxyman_entry["style"]["textStyle"]
 
         filename = f"request_{index}_{entry_id}"
 

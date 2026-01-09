@@ -18,7 +18,7 @@ class ProxymanLogV2Reader(ArchiveReader):
     Ensures lazy loading of entry details.
     """
 
-    REQUEST_FILE_PATTERN = re.compile(r"request_(\d+)_([a-zA-Z0-9-]+)")
+    REQUEST_FILE_PATTERN = re.compile(r"request_(\d+)_([a-zA-Z0-9_-]+)")
 
     def __init__(self, log_file_path: str):
         """
@@ -166,7 +166,7 @@ class ProxymanLogV2Reader(ArchiveReader):
             return None
         except KeyError:
             return None
-        except Exception as e:
+        except Exception:
             return None
 
     @property
@@ -269,7 +269,9 @@ class ProxymanLogV2Reader(ArchiveReader):
         path = output_path or self.log_file_path
 
         # Create a temporary file for the new archive
-        tmp_fd, tmp_path = tempfile.mkstemp(suffix=".proxymanlogv2", dir=os.path.dirname(path) or ".")
+        tmp_fd, tmp_path = tempfile.mkstemp(
+            suffix=".proxymanlogv2", dir=os.path.dirname(path) or "."
+        )
         os.close(tmp_fd)
 
         try:
@@ -313,7 +315,9 @@ class ProxymanLogV2Reader(ArchiveReader):
                     os.remove(tmp_path)
                 except Exception:
                     pass
-            raise RuntimeError(f"Failed to save Proxyman log file to {path}: {e}") from e
+            raise RuntimeError(
+                f"Failed to save Proxyman log file to {path}: {e}"
+            ) from e
 
     @staticmethod
     def export_entries(entries: List[TraceEntry], output_path: str) -> None:

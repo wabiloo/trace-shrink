@@ -1,6 +1,7 @@
 """
 Tests for the Exporter class and cross-format conversion.
 """
+
 import json
 import tempfile
 from pathlib import Path
@@ -9,11 +10,8 @@ import pytest
 
 from trace_shrink import (
     Exporter,
-    HarEntry,
     HarReader,
-    ProxymanLogV2Entry,
     ProxymanLogV2Reader,
-    open_archive,
 )
 
 
@@ -84,7 +82,9 @@ class TestExporterClassMethods:
         """Test exporting entries to Proxyman using class method."""
         entries = har_reader.entries[:2]  # Get first 2 entries
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".proxymanlogv2", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".proxymanlogv2", delete=False
+        ) as f:
             output_path = f.name
 
         try:
@@ -103,15 +103,25 @@ class TestExporterClassMethods:
                 # Verify entries
                 for i, entry in enumerate(entries):
                     # Find the corresponding file in the archive
-                    entry_files = [f for f in file_list if f.startswith(f"request_{i}_")]
+                    entry_files = [
+                        f for f in file_list if f.startswith(f"request_{i}_")
+                    ]
                     assert len(entry_files) == 1
 
                     # Read and verify entry data
                     with zip_ref.open(entry_files[0]) as entry_file:
                         entry_data = json.load(entry_file)
-                        assert entry_data["request"]["fullPath"] == str(entry.request.url)
-                        assert entry_data["request"]["method"]["name"] == entry.request.method
-                        assert entry_data["response"]["status"]["code"] == entry.response.status_code
+                        assert entry_data["request"]["fullPath"] == str(
+                            entry.request.url
+                        )
+                        assert (
+                            entry_data["request"]["method"]["name"]
+                            == entry.request.method
+                        )
+                        assert (
+                            entry_data["response"]["status"]["code"]
+                            == entry.response.status_code
+                        )
 
         finally:
             Path(output_path).unlink()
@@ -159,11 +169,15 @@ class TestExporterInstanceMethods:
         finally:
             Path(output_path).unlink()
 
-    def test_to_proxyman_instance_method_all_entries(self, proxyman_reader: ProxymanLogV2Reader):
+    def test_to_proxyman_instance_method_all_entries(
+        self, proxyman_reader: ProxymanLogV2Reader
+    ):
         """Test exporting all entries to Proxyman using instance method."""
         exporter = Exporter(proxyman_reader)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".proxymanlogv2", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".proxymanlogv2", delete=False
+        ) as f:
             output_path = f.name
 
         try:
@@ -186,7 +200,9 @@ class TestCrossFormatConversion:
         """Test converting HAR entries to Proxyman format."""
         entries = har_reader.entries[:3]
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".proxymanlogv2", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".proxymanlogv2", delete=False
+        ) as f:
             output_path = f.name
 
         try:
@@ -199,9 +215,41 @@ class TestCrossFormatConversion:
             # Verify data integrity
             for i, original_entry in enumerate(entries):
                 converted_entry = reader.entries[i]
-                assert str(converted_entry.request.url) == str(original_entry.request.url)
+                assert str(converted_entry.request.url) == str(
+                    original_entry.request.url
+                )
                 assert converted_entry.request.method == original_entry.request.method
-                assert converted_entry.response.status_code == original_entry.response.status_code
+                assert (
+                    converted_entry.response.status_code
+                    == original_entry.response.status_code
+                )
+
+        finally:
+            Path(output_path).unlink()
+
+    def test_har_to_proxyman_conversion_with_highlight(self, har_reader: HarReader):
+        """Test converting HAR entries with highlight to Proxyman format."""
+        entries = har_reader.entries[:2]
+
+        # Set highlights on HAR entries
+        entries[0].set_highlight("red")
+        entries[1].set_highlight("strike")
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".proxymanlogv2", delete=False
+        ) as f:
+            output_path = f.name
+
+        try:
+            Exporter.to_proxyman(output_path, entries)
+
+            # Verify conversion by reading back
+            reader = ProxymanLogV2Reader(output_path)
+            assert len(reader.entries) == 2
+
+            # Verify highlights were converted correctly
+            assert reader.entries[0]._raw_data["style"]["color"] == 0  # red
+            assert reader.entries[1]._raw_data["style"]["textStyle"] == 0  # strike
 
         finally:
             Path(output_path).unlink()
@@ -209,6 +257,7 @@ class TestCrossFormatConversion:
     def test_proxyman_to_har_conversion(self, proxyman_reader: ProxymanLogV2Reader):
         """Test converting Proxyman entries to HAR format."""
         entries = proxyman_reader.entries[:3]
+        num_entries = len(entries)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
             output_path = f.name
@@ -218,14 +267,19 @@ class TestCrossFormatConversion:
 
             # Verify conversion by reading back
             reader = HarReader(output_path)
-            assert len(reader.entries) == 3
+            assert len(reader.entries) == num_entries
 
             # Verify data integrity
             for i, original_entry in enumerate(entries):
                 converted_entry = reader.entries[i]
-                assert str(converted_entry.request.url) == str(original_entry.request.url)
+                assert str(converted_entry.request.url) == str(
+                    original_entry.request.url
+                )
                 assert converted_entry.request.method == original_entry.request.method
-                assert converted_entry.response.status_code == original_entry.response.status_code
+                assert (
+                    converted_entry.response.status_code
+                    == original_entry.response.status_code
+                )
 
         finally:
             Path(output_path).unlink()
@@ -254,7 +308,10 @@ class TestCrossFormatConversion:
                 final_entry = final_reader.entries[i]
                 assert str(final_entry.request.url) == str(original_entry.request.url)
                 assert final_entry.request.method == original_entry.request.method
-                assert final_entry.response.status_code == original_entry.response.status_code
+                assert (
+                    final_entry.response.status_code
+                    == original_entry.response.status_code
+                )
 
 
 class TestExporterWithFiltering:
@@ -268,7 +325,9 @@ class TestExporterWithFiltering:
         filtered_entries = har_reader.filter(host="stream.broadpeak.io")
 
         if filtered_entries:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".har", delete=False
+            ) as f:
                 output_path = f.name
 
             try:
@@ -319,6 +378,7 @@ class TestExporterErrorHandling:
             # Should raise TypeError if entries not provided
             # Note: This will fail at call time with missing required argument
             import inspect
+
             sig = inspect.signature(Exporter.to_har)
             # Verify entries is a required parameter (no default)
             assert "entries" in sig.parameters
@@ -345,4 +405,3 @@ class TestExporterErrorHandling:
 
         finally:
             Path(output_path).unlink()
-

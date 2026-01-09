@@ -315,6 +315,11 @@ class HarEntry(TraceEntry):
         return self._raw_data.get("comment")
 
     @property
+    def highlight(self) -> Optional[str]:
+        """An optional highlight style for the entry."""
+        return self._raw_data.get("_highlight")
+
+    @property
     def timeline(self) -> TimelineDetails:
         """Timeline details of the HTTP exchange."""
         return self._timeline
@@ -393,15 +398,29 @@ class HarEntry(TraceEntry):
         """
         Set a highlight style on this entry.
 
-        Note: HAR format does not support highlighting/coloring entries.
-        This method does nothing but does not raise an error for compatibility.
+        Supported values:
+        - "red" (0)
+        - "yellow" (1)
+        - "green" (2)
+        - "blue" (3)
+        - "purple" (4)
+        - "grey" (5)
+        - "strike" (strike-through)
+
+        Note: HAR format does not natively support highlighting/coloring entries.
+        The highlight is stored in a custom "_highlight" field and will be preserved
+        when converting to Proxyman format.
 
         Args:
-            highlight: The highlight style (ignored for HAR entries).
+            highlight: The highlight style to apply.
+
+        Raises:
+            ValueError: If an invalid highlight value is provided.
         """
-        # HAR format doesn't support highlighting, so we do nothing
-        # This allows code to work with both HAR and Proxyman formats
-        pass
+        from .highlight import validate_highlight
+
+        validate_highlight(highlight)
+        self._raw_data["_highlight"] = highlight
 
     def __str__(self) -> str:
         return f"HarEntry(id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code})"
@@ -410,7 +429,9 @@ class HarEntry(TraceEntry):
         return f"<HarEntry id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code}>"
 
     @classmethod
-    def from_trace_entry(cls, entry: TraceEntry, entry_index: int = 0) -> Dict[str, Any]:
+    def from_trace_entry(
+        cls, entry: TraceEntry, entry_index: int = 0
+    ) -> Dict[str, Any]:
         """
         Create a HAR entry dictionary from a TraceEntry.
 
@@ -534,21 +555,30 @@ class HarEntry(TraceEntry):
             "receive": -1,
         }
 
-        if request_start and timeline.response_start and timeline.response_end:
-            if timeline.request_end:
-                send_time = (
-                    timeline.request_end - request_start
-                ).total_seconds() * 1000
+        # Safely get timeline properties (they may raise NotImplementedError for HAR entries)
+        try:
+            response_start = timeline.response_start
+        except NotImplementedError:
+            response_start = None
+
+        try:
+            request_end = timeline.request_end
+        except NotImplementedError:
+            request_end = None
+
+        response_end = timeline.response_end  # This is always available
+
+        if request_start and response_start and response_end:
+            if request_end:
+                send_time = (request_end - request_start).total_seconds() * 1000
                 timings["send"] = max(0, send_time)
-            if timeline.response_start:
+            if response_start:
                 wait_time = (
-                    timeline.response_start - (timeline.request_end or request_start)
+                    response_start - (request_end or request_start)
                 ).total_seconds() * 1000
                 timings["wait"] = max(0, wait_time)
-            if timeline.response_end:
-                receive_time = (
-                    timeline.response_end - timeline.response_start
-                ).total_seconds() * 1000
+            if response_end:
+                receive_time = (response_end - response_start).total_seconds() * 1000
                 timings["receive"] = max(0, receive_time)
 
         har_entry: Dict[str, Any] = {

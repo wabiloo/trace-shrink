@@ -174,7 +174,7 @@ class TestProxymanEntryModification:
         assert proxyman_entry.comment is None
         proxyman_entry.set_comment("This is a test note")
         assert proxyman_entry.comment == "This is a test note"
-        assert proxyman_entry._raw_data["notes"] == "This is a test note"
+        assert proxyman_entry._raw_data["style"]["comment"] == "This is a test note"
 
     def test_set_comment_overwrite(self, proxyman_entry):
         """Test overwriting an existing comment."""
@@ -511,12 +511,19 @@ class TestHighlightModification:
             "request_0_test-entry-123", SAMPLE_PROXYMAN_ENTRY_DICT.copy(), reader=None
         )
 
-    def test_har_set_highlight_no_error(self, har_entry):
-        """Test that set_highlight on HAR entries doesn't raise an error."""
-        # Should not raise an error, even though HAR doesn't support highlighting
+    def test_har_set_highlight(self, har_entry):
+        """Test that set_highlight on HAR entries stores highlight in _highlight field."""
+        assert "_highlight" not in har_entry._raw_data
+        
         har_entry.set_highlight("red")
+        assert har_entry._raw_data["_highlight"] == "red"
+        
         har_entry.set_highlight("strike")
-        har_entry.set_highlight("invalid")  # Should still not raise
+        assert har_entry._raw_data["_highlight"] == "strike"
+        
+        # Invalid highlight should raise ValueError
+        with pytest.raises(ValueError):
+            har_entry.set_highlight("invalid")
 
     def test_proxyman_set_highlight_red(self, proxyman_entry):
         """Test setting red highlight on Proxyman entry."""
