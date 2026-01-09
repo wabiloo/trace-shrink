@@ -129,6 +129,38 @@ class ArchiveReader(ABC):
         path_index = self._build_path_index()
         return path_index.get(path, [])
 
+    def get_entries_by_ids(self, entry_ids: List[str]) -> List[TraceEntry]:
+        """
+        Retrieves entries by their IDs, preserving the original archive order (time-ordered).
+
+        Args:
+            entry_ids: List of entry IDs to retrieve.
+
+        Returns:
+            List of TraceEntry objects in their original archive order (chronological).
+
+        Raises:
+            ValueError: If any entry ID is not found.
+        """
+        # Build an index of entries by ID for fast lookup
+        id_index = self._build_id_index()
+
+        # Validate all IDs exist first
+        missing_ids = [entry_id for entry_id in entry_ids if entry_id not in id_index]
+        if missing_ids:
+            raise ValueError(f"Entry IDs not found: {', '.join(missing_ids)}")
+
+        # Create a set for fast lookup
+        entry_ids_set = set(entry_ids)
+
+        # Get entries in their original archive order
+        entries = []
+        for entry in self.entries:
+            if entry.id in entry_ids_set:
+                entries.append(entry)
+
+        return entries
+
     def get_entries_for_partial_url(
         self, url_pattern: str | re.Pattern
     ) -> List[TraceEntry]:

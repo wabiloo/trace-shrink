@@ -585,3 +585,205 @@ class TestArchiveReaderGetEntryById:
             # Verify it's the same entry by comparing key properties
             assert str(retrieved.request.url) == str(entry.request.url)
             assert retrieved.response.status_code == entry.response.status_code
+
+
+class TestArchiveReaderGetEntriesByIds:
+    """Tests for get_entries_by_ids method."""
+
+    # --- Mock Tests ---
+
+    def test_get_entries_by_ids_empty_list(self):
+        """Test getting entries with empty ID list."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        result = reader.get_entries_by_ids([])
+        assert result == []
+
+    def test_get_entries_by_ids_single_id(self):
+        """Test getting a single entry by ID."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        result = reader.get_entries_by_ids(["id-1"])
+        assert len(result) == 1
+        assert result[0] == entry1
+        assert result[0] is entry1  # Check object identity
+
+    def test_get_entries_by_ids_multiple_ids(self):
+        """Test getting multiple entries by IDs."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entry3 = create_mock_entry("http://example.com/page3", "text/html", "id-3")
+        entries = [entry1, entry2, entry3]
+        reader = MockArchiveReader(entries=entries)
+        result = reader.get_entries_by_ids(["id-2", "id-1", "id-3"])
+        assert len(result) == 3
+        # Verify order is preserved as original archive order, not entry_ids order
+        assert result[0] == entry1  # id-1 first (original order)
+        assert result[1] == entry2  # id-2 second (original order)
+        assert result[2] == entry3  # id-3 third (original order)
+
+    def test_get_entries_by_ids_preserves_original_order(self):
+        """Test that get_entries_by_ids preserves the original archive order."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entry3 = create_mock_entry("http://example.com/page3", "text/html", "id-3")
+        entries = [entry1, entry2, entry3]
+        reader = MockArchiveReader(entries=entries)
+        
+        # Request in reverse order, but should return in original archive order
+        result = reader.get_entries_by_ids(["id-3", "id-1", "id-2"])
+        assert len(result) == 3
+        # Should be in original archive order, not the order specified in entry_ids
+        assert result[0] == entry1  # id-1 first (original order)
+        assert result[1] == entry2  # id-2 second (original order)
+        assert result[2] == entry3  # id-3 third (original order)
+
+    def test_get_entries_by_ids_missing_id_raises_error(self):
+        """Test that missing ID raises ValueError."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        with pytest.raises(ValueError, match="Entry IDs not found"):
+            reader.get_entries_by_ids(["id-1", "id-nonexistent", "id-2"])
+
+    def test_get_entries_by_ids_all_missing_raises_error(self):
+        """Test that all missing IDs raises ValueError."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entries = [entry1]
+        reader = MockArchiveReader(entries=entries)
+        
+        with pytest.raises(ValueError, match="Entry IDs not found"):
+            reader.get_entries_by_ids(["id-nonexistent-1", "id-nonexistent-2"])
+
+    def test_get_entries_by_ids_duplicate_ids(self):
+        """Test getting entries with duplicate IDs in the request."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        # Request same ID twice - should return entry only once (in original order)
+        result = reader.get_entries_by_ids(["id-1", "id-1"])
+        assert len(result) == 1  # Duplicate IDs are deduplicated
+        assert result[0] == entry1
+
+    def test_get_entries_by_ids_index_caching(self):
+        """Test that the ID index is built and cached correctly."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        # First call builds the index
+        result1 = reader.get_entries_by_ids(["id-1"])
+        assert result1 == [entry1]
+        
+        # Verify index was built
+        assert reader._id_index is not None
+        
+        # Second call uses cached index
+        result2 = reader.get_entries_by_ids(["id-2"])
+        assert result2 == [entry2]
+        
+        # Verify the index contains both entries
+        assert len(reader._id_index) == 2
+
+    # --- Real HAR File Tests ---
+    @pytest.fixture(scope="class")
+    def har_reader(self):
+        har_file_path = Path(__file__).parent / "archives" / "export-proxyman.har"
+        assert har_file_path.exists(), f"HAR file not found at {har_file_path}"
+        return HarReader(str(har_file_path))
+
+    def test_real_har_get_entries_by_ids_exists(self, har_reader):
+        """Test getting entries by IDs from a real HAR file."""
+        # Get IDs from first 3 entries
+        original_entries = har_reader.entries[:3]
+        entry_ids = [entry.id for entry in original_entries]
+        
+        result = har_reader.get_entries_by_ids(entry_ids)
+        assert len(result) == 3
+        
+        # Verify order matches original archive order
+        for i, original_entry in enumerate(original_entries):
+            assert result[i].id == original_entry.id
+            assert result[i] is original_entry  # Same object
+
+    def test_real_har_get_entries_by_ids_preserves_original_order(self, har_reader):
+        """Test that get_entries_by_ids preserves original archive order from a real HAR file."""
+        # Get entries and their IDs
+        original_entries = har_reader.entries[:3]
+        entry_ids = [entry.id for entry in original_entries]
+        
+        # Request in reverse order
+        reversed_ids = list(reversed(entry_ids))
+        
+        result = har_reader.get_entries_by_ids(reversed_ids)
+        assert len(result) == 3
+        
+        # Verify order matches original archive order, not the reversed order requested
+        for i, original_entry in enumerate(original_entries):
+            assert result[i].id == original_entry.id
+            assert result[i] is original_entry  # Same object
+
+    def test_real_har_get_entries_by_ids_missing_raises_error(self, har_reader):
+        """Test that missing IDs raise ValueError from a real HAR file."""
+        # Get a valid ID
+        valid_id = har_reader.entries[0].id
+        
+        with pytest.raises(ValueError, match="Entry IDs not found"):
+            har_reader.get_entries_by_ids([valid_id, "nonexistent-id-12345"])
+
+    # --- Real Proxyman File Tests ---
+    @pytest.fixture(scope="class")
+    def proxyman_reader(self):
+        proxyman_file_path = Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
+        assert proxyman_file_path.exists(), f"Proxyman file not found at {proxyman_file_path}"
+        from trace_shrink.proxyman_log_reader import ProxymanLogV2Reader
+        return ProxymanLogV2Reader(str(proxyman_file_path))
+
+    def test_real_proxyman_get_entries_by_ids_exists(self, proxyman_reader):
+        """Test getting entries by IDs from a real Proxyman file."""
+        # Get IDs from first 3 entries
+        original_entries = proxyman_reader.entries[:3]
+        entry_ids = [entry.id for entry in original_entries]
+        
+        result = proxyman_reader.get_entries_by_ids(entry_ids)
+        assert len(result) == 3
+        
+        # Verify order matches original archive order and entries match
+        for i, original_entry in enumerate(original_entries):
+            assert result[i].id == original_entry.id
+            assert str(result[i].request.url) == str(original_entry.request.url)
+            assert result[i].response.status_code == original_entry.response.status_code
+
+    def test_real_proxyman_get_entries_by_ids_preserves_original_order(self, proxyman_reader):
+        """Test that get_entries_by_ids preserves original archive order from a real Proxyman file."""
+        # Get entries and their IDs
+        original_entries = proxyman_reader.entries[:3]
+        entry_ids = [entry.id for entry in original_entries]
+        
+        # Request in reverse order
+        reversed_ids = list(reversed(entry_ids))
+        
+        result = proxyman_reader.get_entries_by_ids(reversed_ids)
+        assert len(result) == 3
+        
+        # Verify order matches original archive order, not the reversed order requested
+        for i, original_entry in enumerate(original_entries):
+            assert result[i].id == original_entry.id
+            assert str(result[i].request.url) == str(original_entry.request.url)
+
+    def test_real_proxyman_get_entries_by_ids_missing_raises_error(self, proxyman_reader):
+        """Test that missing IDs raise ValueError from a real Proxyman file."""
+        # Get a valid ID
+        valid_id = proxyman_reader.entries[0].id
+        
+        with pytest.raises(ValueError, match="Entry IDs not found"):
+            proxyman_reader.get_entries_by_ids([valid_id, "nonexistent-id-12345"])
