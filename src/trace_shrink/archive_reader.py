@@ -2,7 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import yarl
@@ -37,6 +37,7 @@ class ArchiveReader(ABC):
     def __init__(self):
         self._url_index: Optional[Dict[str, List[TraceEntry]]] = None
         self._path_index: Optional[Dict[str, List[TraceEntry]]] = None
+        self._id_index: Optional[Dict[str, TraceEntry]] = None
 
     @property
     @abstractmethod
@@ -87,6 +88,32 @@ class ArchiveReader(ABC):
                     self._path_index[path] = []
                 self._path_index[path].append(entry)
         return self._path_index
+
+    def _build_id_index(self) -> Dict[str, TraceEntry]:
+        """
+        Builds an index mapping entry IDs to entries for fast lookups.
+        This is cached after the first call.
+        """
+        if self._id_index is None:
+            self._id_index = {}
+            for entry in self.entries:
+                entry_id = entry.id
+                if entry_id not in self._id_index:
+                    self._id_index[entry_id] = entry
+        return self._id_index
+
+    def get_entry_by_id(self, entry_id: str) -> Optional[TraceEntry]:
+        """
+        Retrieves an entry by its unique identifier using a fast indexed lookup.
+
+        Args:
+            entry_id: The unique identifier of the entry to retrieve.
+
+        Returns:
+            The TraceEntry with the matching ID, or None if not found.
+        """
+        id_index = self._build_id_index()
+        return id_index.get(entry_id)
 
     def get_entries_for_url(self, url: str | yarl.URL) -> List[TraceEntry]:
         """

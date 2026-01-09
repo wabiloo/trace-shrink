@@ -28,12 +28,14 @@ class MockArchiveReader(ArchiveReader):
         return iter(self._entries)
 
 
-def create_mock_entry(url_str: str, mime_type: str) -> TraceEntry:
+def create_mock_entry(url_str: str, mime_type: str, entry_id: str = None) -> TraceEntry:
     entry = MagicMock(spec=TraceEntry)
     entry.request = MagicMock(spec=RequestDetails)
     entry.request.url = yarl.URL(url_str)
     entry.response = MagicMock(spec=ResponseDetails)
     entry.response.mime_type = mime_type
+    if entry_id is not None:
+        type(entry).id = PropertyMock(return_value=entry_id)
     return entry
 
 
@@ -457,3 +459,129 @@ class TestArchiveReaderGetEntriesForUrl:
         regex_pattern = re.compile(r"nonexistentdomain\.com/.*\.mpd$")
         result = har_reader.get_entries_for_url(regex_pattern)
         assert len(result) == 0
+
+
+class TestArchiveReaderGetEntryById:
+    # --- Mock Tests ---
+
+    def test_empty_archive(self):
+        reader = MockArchiveReader(entries=[])
+        assert reader.get_entry_by_id("any-id") is None
+
+    def test_get_entry_by_id_no_results(self):
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        assert reader.get_entry_by_id("id-3") is None
+
+    def test_get_entry_by_id_one_result(self):
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        result = reader.get_entry_by_id("id-1")
+        assert result == entry1
+        assert result is entry1  # Check object identity
+
+    def test_get_entry_by_id_multiple_entries_different_ids(self):
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entry3 = create_mock_entry("http://example.com/page3", "text/html", "id-3")
+        entries = [entry1, entry2, entry3]
+        reader = MockArchiveReader(entries=entries)
+        assert reader.get_entry_by_id("id-1") == entry1
+        assert reader.get_entry_by_id("id-2") == entry2
+        assert reader.get_entry_by_id("id-3") == entry3
+
+    def test_get_entry_by_id_index_caching(self):
+        """Test that the ID index is built and cached correctly."""
+        entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
+        entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        # First call builds the index
+        result1 = reader.get_entry_by_id("id-1")
+        assert result1 == entry1
+        
+        # Second call uses cached index
+        assert reader._id_index is not None
+        result2 = reader.get_entry_by_id("id-2")
+        assert result2 == entry2
+        
+        # Verify the index contains both entries
+        assert len(reader._id_index) == 2
+        assert reader._id_index["id-1"] == entry1
+        assert reader._id_index["id-2"] == entry2
+
+    # --- Real HAR File Tests ---
+    @pytest.fixture(scope="class")
+    def har_reader(self):
+        har_file_path = Path(__file__).parent / "archives" / "export-proxyman.har"
+        assert har_file_path.exists(), f"HAR file not found at {har_file_path}"
+        return HarReader(str(har_file_path))
+
+    def test_real_har_get_entry_by_id_exists(self, har_reader):
+        """Test getting an entry by ID from a real HAR file."""
+        # Get the first entry to find its ID
+        first_entry = har_reader.entries[0]
+        entry_id = first_entry.id
+        
+        # Retrieve it by ID
+        result = har_reader.get_entry_by_id(entry_id)
+        assert result is not None
+        assert result.id == entry_id
+        assert result is first_entry  # Should be the same object
+
+    def test_real_har_get_entry_by_id_not_exists(self, har_reader):
+        """Test getting a non-existent entry ID from a real HAR file."""
+        result = har_reader.get_entry_by_id("nonexistent-id-12345")
+        assert result is None
+
+    def test_real_har_get_entry_by_id_all_entries(self, har_reader):
+        """Test that all entries can be retrieved by their IDs."""
+        for entry in har_reader.entries:
+            entry_id = entry.id
+            retrieved = har_reader.get_entry_by_id(entry_id)
+            assert retrieved is not None
+            assert retrieved.id == entry_id
+            assert retrieved is entry  # Should be the same object
+
+    # --- Real Proxyman File Tests ---
+    @pytest.fixture(scope="class")
+    def proxyman_reader(self):
+        proxyman_file_path = Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
+        assert proxyman_file_path.exists(), f"Proxyman file not found at {proxyman_file_path}"
+        from trace_shrink.proxyman_log_reader import ProxymanLogV2Reader
+        return ProxymanLogV2Reader(str(proxyman_file_path))
+
+    def test_real_proxyman_get_entry_by_id_exists(self, proxyman_reader):
+        """Test getting an entry by ID from a real Proxyman file."""
+        # Get the first entry to find its ID
+        first_entry = proxyman_reader.entries[0]
+        entry_id = first_entry.id
+        
+        # Retrieve it by ID
+        result = proxyman_reader.get_entry_by_id(entry_id)
+        assert result is not None
+        assert result.id == entry_id
+        # Verify it's the same entry by comparing key properties
+        assert str(result.request.url) == str(first_entry.request.url)
+        assert result.response.status_code == first_entry.response.status_code
+
+    def test_real_proxyman_get_entry_by_id_not_exists(self, proxyman_reader):
+        """Test getting a non-existent entry ID from a real Proxyman file."""
+        result = proxyman_reader.get_entry_by_id("nonexistent-id-12345")
+        assert result is None
+
+    def test_real_proxyman_get_entry_by_id_all_entries(self, proxyman_reader):
+        """Test that all entries can be retrieved by their IDs."""
+        for entry in proxyman_reader.entries:
+            entry_id = entry.id
+            retrieved = proxyman_reader.get_entry_by_id(entry_id)
+            assert retrieved is not None
+            assert retrieved.id == entry_id
+            # Verify it's the same entry by comparing key properties
+            assert str(retrieved.request.url) == str(entry.request.url)
+            assert retrieved.response.status_code == entry.response.status_code
