@@ -4,7 +4,7 @@ This guide provides a quick overview of how to use `trace-shrink` to analyze you
 
 ## Opening an Archive
 
-The main entry point to the library is the `open_archive` function. It automatically detects the file type (HAR or Proxyman) and returns an appropriate `ArchiveReader` instance.
+The main entry point to the library is the `open_archive` function. It automatically detects the file type (HAR, Proxyman, or Bodylogger) and returns an appropriate `ArchiveReader` instance.
 
 ```python
 from trace_shrink import open_archive
@@ -16,6 +16,9 @@ try:
     # Or open a Proxyman log
     proxyman_archive = open_archive("path/to/your/capture.proxymanlogv2")
 
+    # Or open a Bodylogger file
+    bodylogger_archive = open_archive("path/to/your/capture.log")
+
     print(f"Successfully opened archive with {len(har_archive)} entries.")
 
 except FileNotFoundError:
@@ -24,6 +27,8 @@ except ValueError as e:
     print(f"Error: {e}")
 
 ```
+
+**Note**: Bodylogger files (.log) are read-only. You cannot modify or save changes to them.
 
 ## Iterating and Filtering Entries
 
@@ -113,6 +118,58 @@ else:
 
     except ValueError as e:
         print(f"Error getting manifest stream: {e}")
+```
+
+## Converting Between Formats
+
+You can export entries to different formats using the `Exporter` class. This is particularly useful for converting bodylogger files to HAR format.
+
+```python
+from trace_shrink import open_archive, Exporter
+
+# Open a bodylogger file
+bodylogger_archive = open_archive("path/to/capture.log")
+
+# Create an exporter and convert to HAR
+exporter = Exporter(bodylogger_archive)
+exporter.to_har("output.har")
+
+print(f"Converted {len(bodylogger_archive)} entries to HAR format.")
+```
+
+You can also use the provided script:
+
+```bash
+python scripts/bodylogger_to_har.py input.log output.har
+```
+
+## Bodylogger-Specific Features
+
+Bodylogger entries include additional metadata beyond standard HTTP traffic:
+
+```python
+from trace_shrink import BodyLoggerReader
+
+reader = BodyLoggerReader("path/to/capture.log")
+
+for entry in reader:
+    print(f"Service ID: {entry.service_id}")
+    print(f"Session ID: {entry.session_id}")
+    print(f"Correlation ID: {entry.correlation_id}")
+    print(f"Log Type: {entry.comment}")  # ORIGIN, MANIPULATED_MANIFEST, etc.
+
+# Filter by log type
+origin_entries = reader.query(log_type="ORIGIN")
+print(f"Found {len(origin_entries)} ORIGIN entries")
+
+# Filter by service ID
+service_entries = reader.query(service_id="your-service-id")
+
+# Filter by time range
+from datetime import datetime
+start = datetime(2026, 1, 8, 14, 0)
+end = datetime(2026, 1, 8, 15, 0)
+time_filtered = reader.query(start_time=start, end_time=end)
 ```
 
 This covers the most common use cases for getting started with `trace-shrink`. For a detailed list of all available classes and methods, please see the [API Reference](./api.md). 
