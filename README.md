@@ -1,25 +1,23 @@
 # trace-shrink
 
-A tool to analyze captures of ABR streams (HAR or Proxyman).
+A Python package for analyzing HTTP traffic captures from HAR files or Proxyman logs, with a focus on ABR streams (HLS and MPEG-DASH). trace-shrink provides a unified API to detect ABR manifest URLs, extract requests, and analyze streaming sessions, in particular recorded from live streams in which the same manifest URL is requested multiple times for refreshes.
 
-See the documentation for more details: https://wabiloo.github.io/trace-shrink/
+## Features
+
+- Unified API for different trace file formats (.har and .proxymanlogv2)
+- Detect ABR manifest URLs from captured HTTP traffic
+- Extract and analyze streams of requests to ABR manifests
+- Focus on live streaming scenarios with repeated manifest requests
 
 ## Documentation
 
-This project uses [MkDocs](https://www.mkdocs.org/) and the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) theme for its documentation.
+See the full documentation for more details: https://wabiloo.github.io/trace-shrink/
 
-### Running the documentation server
+## Installation
 
-To view the documentation locally, you first need to install the project dependencies. It is recommended to do this in a virtual environment. `uv` is used for dependency management.
+```bash
+pip install trace-shrink
+```
 
-1.  Install dependencies:
-    ```bash
-    uv sync --dev
-    ```
+**Requirements:** Python 3.10 or higher
 
-2.  Start the local documentation server:
-    ```bash
-    uv run docs
-    ```
-
-You can now access the documentation at `http://127.0.0.1:8000`. The server will automatically reload when you make changes to the documentation files in the `docs` directory.
