@@ -32,9 +32,13 @@ class Format(Enum):
 
     @staticmethod
     def from_url_or_mime_type(mime_type: str, url: yarl.URL) -> Optional[Format]:
-        format = Format.from_mime_type(mime_type)
-        if format:
-            return format
+        try:
+            format = Format.from_mime_type(mime_type)
+            if format:
+                return format
+        except ValueError:
+            pass
+
         return Format.from_url(url)
 
 
@@ -49,6 +53,8 @@ class MimeType:
     }
 
     def __init__(self, mime_type: str):
+        if mime_type is None:
+            raise ValueError("Mime type cannot be None")
         self.mime_type = mime_type.split(";")[0].strip()
 
     def __str__(self) -> str:
