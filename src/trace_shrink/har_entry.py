@@ -330,6 +330,79 @@ class HarEntry(TraceEntry):
         """Total time for the entry in milliseconds from the HAR spec."""
         return self._raw_data.get("time")
 
+    def set_comment(self, comment: str) -> None:
+        """
+        Set a comment on this entry.
+
+        Args:
+            comment: The comment text to add to this entry.
+        """
+        self._raw_data["comment"] = comment
+
+    def add_response_header(self, name: str, value: str) -> None:
+        """
+        Add or update a header in the response.
+
+        If a header with the same name already exists, its value will be updated.
+        Otherwise, a new header will be added.
+
+        Args:
+            name: The header name.
+            value: The header value.
+        """
+        if "response" not in self._raw_data:
+            self._raw_data["response"] = {}
+        if "headers" not in self._raw_data["response"]:
+            self._raw_data["response"]["headers"] = []
+
+        headers = self._raw_data["response"]["headers"]
+        # Check if header already exists and update it
+        for h in headers:
+            if h.get("name") == name:
+                h["value"] = value
+                return
+        # Add new header if it doesn't exist
+        headers.append({"name": name, "value": value})
+
+    def add_request_header(self, name: str, value: str) -> None:
+        """
+        Add or update a header in the request.
+
+        If a header with the same name already exists, its value will be updated.
+        Otherwise, a new header will be added.
+
+        Args:
+            name: The header name.
+            value: The header value.
+        """
+        if "request" not in self._raw_data:
+            self._raw_data["request"] = {}
+        if "headers" not in self._raw_data["request"]:
+            self._raw_data["request"]["headers"] = []
+
+        headers = self._raw_data["request"]["headers"]
+        # Check if header already exists and update it
+        for h in headers:
+            if h.get("name") == name:
+                h["value"] = value
+                return
+        # Add new header if it doesn't exist
+        headers.append({"name": name, "value": value})
+
+    def set_highlight(self, highlight: str) -> None:
+        """
+        Set a highlight style on this entry.
+
+        Note: HAR format does not support highlighting/coloring entries.
+        This method does nothing but does not raise an error for compatibility.
+
+        Args:
+            highlight: The highlight style (ignored for HAR entries).
+        """
+        # HAR format doesn't support highlighting, so we do nothing
+        # This allows code to work with both HAR and Proxyman formats
+        pass
+
     def __str__(self) -> str:
         return f"HarEntry(id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code})"
 

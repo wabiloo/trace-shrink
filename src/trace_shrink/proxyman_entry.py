@@ -333,6 +333,115 @@ class ProxymanLogV2Entry(TraceEntry):
         """Returns the raw, unmodified JSON data for this entry."""
         return self._raw_data
 
+    def set_comment(self, comment: str) -> None:
+        """
+        Set a comment/note on this entry.
+
+        Args:
+            comment: The comment text to add to this entry.
+        """
+        self._raw_data["notes"] = comment
+
+    def add_response_header(self, name: str, value: str) -> None:
+        """
+        Add or update a header in the response.
+
+        If a header with the same name already exists, its value will be updated.
+        Otherwise, a new header will be added.
+
+        Args:
+            name: The header name.
+            value: The header value.
+        """
+        if "response" not in self._raw_data:
+            self._raw_data["response"] = {}
+        if "header" not in self._raw_data["response"]:
+            self._raw_data["response"]["header"] = {"entries": []}
+
+        entries = self._raw_data["response"]["header"]["entries"]
+        # Check if header already exists and update it
+        for entry in entries:
+            if entry.get("key", {}).get("name") == name:
+                entry["value"] = value
+                return
+        # Add new header if it doesn't exist
+        entries.append({"key": {"name": name}, "value": value})
+
+    def add_request_header(self, name: str, value: str) -> None:
+        """
+        Add or update a header in the request.
+
+        If a header with the same name already exists, its value will be updated.
+        Otherwise, a new header will be added.
+
+        Args:
+            name: The header name.
+            value: The header value.
+        """
+        if "request" not in self._raw_data:
+            self._raw_data["request"] = {}
+        if "header" not in self._raw_data["request"]:
+            self._raw_data["request"]["header"] = {"entries": []}
+
+        entries = self._raw_data["request"]["header"]["entries"]
+        # Check if header already exists and update it
+        for entry in entries:
+            if entry.get("key", {}).get("name") == name:
+                entry["value"] = value
+                return
+        # Add new header if it doesn't exist
+        entries.append({"key": {"name": name}, "value": value})
+
+    def set_highlight(self, highlight: str) -> None:
+        """
+        Set a highlight color or strike-through style on this entry.
+
+        Supported values:
+        - "red" (0)
+        - "yellow" (1)
+        - "green" (2)
+        - "blue" (3)
+        - "purple" (4)
+        - "grey" (5)
+        - "strike" (sets textStyle to 0)
+
+        Args:
+            highlight: The highlight style to apply.
+
+        Raises:
+            ValueError: If an invalid highlight value is provided.
+        """
+        if "style" not in self._raw_data:
+            self._raw_data["style"] = {}
+
+        color_map = {
+            "red": 0,
+            "yellow": 1,
+            "green": 2,
+            "blue": 3,
+            "purple": 4,
+            "grey": 5,
+        }
+
+        if highlight == "strike":
+            # Set textStyle to 0 for strike-through
+            self._raw_data["style"]["textStyle"] = 0
+            # Remove color if it exists
+            if "color" in self._raw_data["style"]:
+                del self._raw_data["style"]["color"]
+        elif highlight in color_map:
+            # Set color value
+            self._raw_data["style"]["color"] = color_map[highlight]
+            # Remove textStyle if it exists
+            if "textStyle" in self._raw_data["style"]:
+                del self._raw_data["style"]["textStyle"]
+        else:
+            valid_values = list(color_map.keys()) + ["strike"]
+            raise ValueError(
+                f"Invalid highlight value '{highlight}'. "
+                f"Valid values are: {', '.join(valid_values)}"
+            )
+
     def __str__(self) -> str:
         """Provides a user-friendly string representation."""
         return f"ProxymanLogV2Entry(id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code})"
