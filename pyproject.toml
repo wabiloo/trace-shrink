@@ -1,6 +1,6 @@
 [project]
 name = "trace-shrink"
-version = "1.0.0"
+version = "1.1.0"
 description = "A tool to analyze captures of ABR streams (HAR or Proxyman)."
 authors = [{ name = "Fabre Lambeau", email = "fabre.lambeau@gmail.com" }]
 requires-python = ">=3.10"
