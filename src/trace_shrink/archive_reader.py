@@ -115,6 +115,39 @@ class ArchiveReader(ABC):
         id_index = self._build_id_index()
         return id_index.get(entry_id)
 
+    def get_next_entry_by_id(
+        self, entry_id: str, direction: int, n: int = 1
+    ) -> Optional[TraceEntry]:
+        """
+        Retrieves the nth entry in the same manifest (same URL) relative to the given entry.
+
+        Args:
+            entry_id: The unique identifier of the reference entry.
+            direction: 1 for forward (next), -1 for backward (previous).
+            n: Number of entries to skip (default: 1).
+
+        Returns:
+            The TraceEntry at the calculated position, or None if:
+            - The entry_id is not found
+            - The calculated position is out of bounds
+
+        Examples:
+            get_next_entry_by_id("entry_5", 1, 1)  # Next entry with same URL
+            get_next_entry_by_id("entry_5", -1, 1)  # Previous entry with same URL
+            get_next_entry_by_id("entry_5", 1, 3)  # 3rd next entry with same URL
+        """
+        # Get the reference entry
+        entry = self.get_entry_by_id(entry_id)
+        if entry is None:
+            return None
+
+        # Get the manifest stream for this entry's URL
+        url = entry.request.url
+        manifest_stream = self.get_manifest_stream(url)
+
+        # Delegate to the manifest stream
+        return manifest_stream.get_relative_entry(entry, direction, n)
+
     def get_entries_for_url(self, url: str | yarl.URL) -> List[TraceEntry]:
         """
         Retrieves entries for a specific URL using a fast indexed lookup.

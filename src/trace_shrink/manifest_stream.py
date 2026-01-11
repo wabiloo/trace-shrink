@@ -130,6 +130,38 @@ class ManifestStream:
 
         return None
 
+    def get_relative_entry(
+        self, entry: TraceEntry, direction: int, n: int = 1
+    ) -> Optional[TraceEntry]:
+        """
+        Gets the nth entry relative to the given entry in this manifest stream.
+
+        Args:
+            entry: The reference entry to navigate from.
+            direction: 1 for forward (next), -1 for backward (previous).
+            n: Number of entries to skip (default: 1).
+
+        Returns:
+            The TraceEntry at the calculated position, or None if:
+            - The entry is not found in this stream
+            - The calculated position is out of bounds
+
+        Examples:
+            get_relative_entry(entry, 1, 1)  # Next entry
+            get_relative_entry(entry, -1, 1)  # Previous entry
+            get_relative_entry(entry, 1, 3)  # 3rd next entry
+        """
+        try:
+            current_index = self.entries.index(entry)
+        except ValueError:
+            return None
+
+        new_index = current_index + (direction * n)
+
+        if 0 <= new_index < len(self.entries):
+            return self.entries[new_index]
+        return None
+
     def __len__(self) -> int:
         return len(self.entries)
 

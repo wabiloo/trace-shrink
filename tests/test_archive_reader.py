@@ -787,3 +787,131 @@ class TestArchiveReaderGetEntriesByIds:
         
         with pytest.raises(ValueError, match="Entry IDs not found"):
             proxyman_reader.get_entries_by_ids([valid_id, "nonexistent-id-12345"])
+
+
+class TestArchiveReaderGetNextEntryById:
+    # --- Mock Tests ---
+
+    def test_get_next_entry_by_id_forward_single(self):
+        """Test getting the next entry (direction=1, n=1)."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entry3 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-3")
+        entries = [entry1, entry2, entry3]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-1", direction=1, n=1)
+        assert result == entry2
+
+    def test_get_next_entry_by_id_backward_single(self):
+        """Test getting the previous entry (direction=-1, n=1)."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entry3 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-3")
+        entries = [entry1, entry2, entry3]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-3", direction=-1, n=1)
+        assert result == entry2
+
+    def test_get_next_entry_by_id_forward_multiple(self):
+        """Test skipping multiple entries forward."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entry3 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-3")
+        entry4 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-4")
+        entries = [entry1, entry2, entry3, entry4]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-1", direction=1, n=3)
+        assert result == entry4
+
+    def test_get_next_entry_by_id_backward_multiple(self):
+        """Test skipping multiple entries backward."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entry3 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-3")
+        entry4 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-4")
+        entries = [entry1, entry2, entry3, entry4]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-4", direction=-1, n=2)
+        assert result == entry2
+
+    def test_get_next_entry_by_id_out_of_bounds_forward(self):
+        """Test that going beyond the end returns None."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-2", direction=1, n=1)
+        assert result is None
+
+    def test_get_next_entry_by_id_out_of_bounds_backward(self):
+        """Test that going before the beginning returns None."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-1", direction=-1, n=1)
+        assert result is None
+
+    def test_get_next_entry_by_id_invalid_entry_id(self):
+        """Test that an invalid entry ID returns None."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entries = [entry1]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-nonexistent", direction=1, n=1)
+        assert result is None
+
+    def test_get_next_entry_by_id_same_url_only(self):
+        """Test that only entries with the same URL are navigated."""
+        url1 = "http://example.com/manifest1.m3u8"
+        url2 = "http://example.com/manifest2.m3u8"
+        entry1 = create_mock_entry(url1, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url2, "application/vnd.apple.mpegurl", "id-2")
+        entry3 = create_mock_entry(url1, "application/vnd.apple.mpegurl", "id-3")
+        entry4 = create_mock_entry(url1, "application/vnd.apple.mpegurl", "id-4")
+        entries = [entry1, entry2, entry3, entry4]
+        reader = MockArchiveReader(entries=entries)
+        
+        # From id-1, next should be id-3 (skipping id-2 which has different URL)
+        result = reader.get_next_entry_by_id("id-1", direction=1, n=1)
+        assert result == entry3
+        
+        # From id-3, previous should be id-1 (skipping id-2 which has different URL)
+        result = reader.get_next_entry_by_id("id-3", direction=-1, n=1)
+        assert result == entry1
+
+    def test_get_next_entry_by_id_default_n_value(self):
+        """Test that the default n=1 works correctly."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        # Should default to n=1
+        result = reader.get_next_entry_by_id("id-1", direction=1)
+        assert result == entry2
+
+    def test_get_next_entry_by_id_large_skip(self):
+        """Test large skip value that goes out of bounds."""
+        url = "http://example.com/manifest.m3u8"
+        entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
+        entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
+        entries = [entry1, entry2]
+        reader = MockArchiveReader(entries=entries)
+        
+        result = reader.get_next_entry_by_id("id-1", direction=1, n=10)
+        assert result is None

@@ -196,3 +196,73 @@ def test_manifest_stream_format_property(url, mime_type, expected_format):
     stream = ManifestStream([entry])
 
     assert stream.format == expected_format
+
+
+# === Tests for get_relative_entry ===
+def test_get_relative_entry_next_single(stream: ManifestStream):
+    """Test getting the next entry (n=1, direction=1)."""
+    current = stream.entries[2]  # Middle entry
+    next_entry = stream.get_relative_entry(current, direction=1, n=1)
+    assert next_entry == stream.entries[3]
+
+
+def test_get_relative_entry_previous_single(stream: ManifestStream):
+    """Test getting the previous entry (n=1, direction=-1)."""
+    current = stream.entries[3]
+    prev_entry = stream.get_relative_entry(current, direction=-1, n=1)
+    assert prev_entry == stream.entries[2]
+
+
+def test_get_relative_entry_next_multiple(stream: ManifestStream):
+    """Test getting the 3rd next entry."""
+    current = stream.entries[1]
+    next_entry = stream.get_relative_entry(current, direction=1, n=3)
+    assert next_entry == stream.entries[4]
+
+
+def test_get_relative_entry_previous_multiple(stream: ManifestStream):
+    """Test getting the 2nd previous entry."""
+    current = stream.entries[4]
+    prev_entry = stream.get_relative_entry(current, direction=-1, n=2)
+    assert prev_entry == stream.entries[2]
+
+
+def test_get_relative_entry_out_of_bounds_forward(stream: ManifestStream):
+    """Test that getting an entry beyond the end returns None."""
+    current = stream.entries[-1]
+    next_entry = stream.get_relative_entry(current, direction=1, n=1)
+    assert next_entry is None
+
+
+def test_get_relative_entry_out_of_bounds_backward(stream: ManifestStream):
+    """Test that getting an entry before the beginning returns None."""
+    current = stream.entries[0]
+    prev_entry = stream.get_relative_entry(current, direction=-1, n=1)
+    assert prev_entry is None
+
+
+def test_get_relative_entry_out_of_bounds_large_skip(stream: ManifestStream):
+    """Test that a large skip beyond bounds returns None."""
+    current = stream.entries[2]
+    next_entry = stream.get_relative_entry(current, direction=1, n=10)
+    assert next_entry is None
+
+
+def test_get_relative_entry_not_in_stream(stream: ManifestStream):
+    """Test that an entry not in the stream returns None."""
+    other_entry = create_mock_entry(datetime(2025, 1, 1, tzinfo=timezone.utc))
+    result = stream.get_relative_entry(other_entry, direction=1, n=1)
+    assert result is None
+
+
+def test_get_relative_entry_at_boundaries(stream: ManifestStream):
+    """Test exact boundary cases."""
+    # First to last (should succeed)
+    first = stream.entries[0]
+    last_from_first = stream.get_relative_entry(first, direction=1, n=5)
+    assert last_from_first == stream.entries[5]
+    
+    # Last to first (should succeed)
+    last = stream.entries[-1]
+    first_from_last = stream.get_relative_entry(last, direction=-1, n=5)
+    assert first_from_last == stream.entries[0]
