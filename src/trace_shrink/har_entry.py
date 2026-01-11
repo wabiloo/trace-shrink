@@ -394,6 +394,32 @@ class HarEntry(TraceEntry):
         # Add new header if it doesn't exist
         headers.append({"name": name, "value": value})
 
+    def set_response_content(self, content: str) -> None:
+        """
+        Set the response body content.
+
+        This updates the content text in the raw data and clears any cached
+        decoded body to ensure the new content is used.
+
+        Args:
+            content: The new response body content as a string.
+        """
+        if "response" not in self._raw_data:
+            self._raw_data["response"] = {}
+        if "content" not in self._raw_data["response"]:
+            self._raw_data["response"]["content"] = {}
+
+        self._raw_data["response"]["content"]["text"] = content
+        # Clear encoding since we're setting plain text
+        if "encoding" in self._raw_data["response"]["content"]:
+            del self._raw_data["response"]["content"]["encoding"]
+
+        # Clear the cached decoded body in _HarResponseBodyDetails
+        if hasattr(self._response, "_body_details"):
+            self._response._body_details._decoded_body_cache = None
+            # Also update the _data reference to point to the same content dict
+            self._response._body_details._data = self._raw_data["response"]["content"]
+
     def set_highlight(self, highlight: str) -> None:
         """
         Set a highlight style on this entry.

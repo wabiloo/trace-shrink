@@ -416,6 +416,28 @@ class ProxymanLogV2Entry(TraceEntry):
         # Add new header if it doesn't exist
         entries.append({"key": {"name": name}, "value": value})
 
+    def set_response_content(self, content: str) -> None:
+        """
+        Set the response body content.
+
+        This updates the content text and clears any cached decoded body.
+
+        Args:
+            content: The new response body content as a string.
+        """
+        if "response" not in self._raw_data:
+            self._raw_data["response"] = {}
+        if "body" not in self._raw_data["response"]:
+            self._raw_data["response"]["body"] = {}
+
+        # Store as text data
+        self._raw_data["response"]["body"]["textData"] = content
+
+        # Clear cached body in response details if it exists
+        if hasattr(self._response, "_body_details"):
+            if hasattr(self._response._body_details, "_decoded_body_cache"):
+                self._response._body_details._decoded_body_cache = None
+
     def set_highlight(self, highlight: str) -> None:
         """
         Set a highlight color or strike-through style on this entry.
