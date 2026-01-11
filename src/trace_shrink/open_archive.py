@@ -4,6 +4,7 @@ from .archive_reader import ArchiveReader
 from .bodylogger_reader import BodyLoggerReader
 from .har_reader import HarReader
 from .proxyman_log_reader import ProxymanLogV2Reader
+from .multifile_reader import MultiFileFolderArchive
 
 
 def open_archive(path: str) -> ArchiveReader:
@@ -13,6 +14,9 @@ def open_archive(path: str) -> ArchiveReader:
     
     Raises ValueError for unknown/unsupported file formats.
     """
+    if os.path.isdir(path):
+        return MultiFileFolderArchive(path)
+
     ext = os.path.splitext(path)[1].lower()
     if ext == ".har":
         return HarReader(path)
