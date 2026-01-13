@@ -489,96 +489,6 @@ class ProxymanLogV2Entry(TraceEntry):
         """Returns the raw, unmodified JSON data for this entry."""
         return self._raw_data
 
-    def set_comment(self, comment: str) -> None:
-        """
-        Set a comment/note on this entry.
-
-        Args:
-            comment: The comment text to add to this entry.
-        """
-        # Use TraceEntry's override mechanism
-        super().set_comment(comment)
-        # Also update _raw_data for backward compatibility
-        if "style" not in self._raw_data:
-            self._raw_data["style"] = {}
-        self._raw_data["style"]["comment"] = comment
-
-    def add_response_header(self, name: str, value: str) -> None:
-        """
-        Add or update a header in the response.
-
-        If a header with the same name already exists, its value will be updated.
-        Otherwise, a new header will be added.
-
-        Args:
-            name: The header name.
-            value: The header value.
-        """
-        # Use TraceEntry's override mechanism
-        super().add_response_header(name, value)
-        # Also update _raw_data for backward compatibility
-        if "response" not in self._raw_data:
-            self._raw_data["response"] = {}
-        if "header" not in self._raw_data["response"]:
-            self._raw_data["response"]["header"] = {"entries": []}
-
-        entries = self._raw_data["response"]["header"]["entries"]
-        # Check if header already exists and update it
-        for entry in entries:
-            if entry.get("key", {}).get("name") == name:
-                entry["value"] = value
-                return
-        # Add new header if it doesn't exist
-        entries.append({"key": {"name": name}, "value": value})
-
-    def add_request_header(self, name: str, value: str) -> None:
-        """
-        Add or update a header in the request.
-
-        If a header with the same name already exists, its value will be updated.
-        Otherwise, a new header will be added.
-
-        Args:
-            name: The header name.
-            value: The header value.
-        """
-        # Use TraceEntry's override mechanism
-        super().add_request_header(name, value)
-        # Also update _raw_data for backward compatibility
-        if "request" not in self._raw_data:
-            self._raw_data["request"] = {}
-        if "header" not in self._raw_data["request"]:
-            self._raw_data["request"]["header"] = {"entries": []}
-
-        entries = self._raw_data["request"]["header"]["entries"]
-        # Check if header already exists and update it
-        for entry in entries:
-            if entry.get("key", {}).get("name") == name:
-                entry["value"] = value
-                return
-        # Add new header if it doesn't exist
-        entries.append({"key": {"name": name}, "value": value})
-
-    def set_response_content(self, content: str) -> None:
-        """
-        Set the response body content.
-
-        This updates the content text and clears any cached decoded body.
-
-        Args:
-            content: The new response body content as a string.
-        """
-        # Use TraceEntry's override mechanism
-        super().set_response_content(content)
-        # Also update _raw_data for backward compatibility
-        if "response" not in self._raw_data:
-            self._raw_data["response"] = {}
-        if "body" not in self._raw_data["response"]:
-            self._raw_data["response"]["body"] = {}
-
-        # Store as text data
-        self._raw_data["response"]["body"]["textData"] = content
-
     def set_highlight(self, highlight: str) -> None:
         """
         Set a highlight color or strike-through style on this entry.
@@ -601,22 +511,6 @@ class ProxymanLogV2Entry(TraceEntry):
         validate_highlight(highlight)
         # Use TraceEntry's override mechanism
         super().set_highlight(highlight)
-        # Also update _raw_data for backward compatibility
-        if "style" not in self._raw_data:
-            self._raw_data["style"] = {}
-
-        if highlight == "strike":
-            # Set textStyle to 0 for strike-through
-            self._raw_data["style"]["textStyle"] = 0
-            # Remove color if it exists
-            if "color" in self._raw_data["style"]:
-                del self._raw_data["style"]["color"]
-        elif highlight in HIGHLIGHT_COLOR_MAP:
-            # Set color value
-            self._raw_data["style"]["color"] = HIGHLIGHT_COLOR_MAP[highlight]
-            # Remove textStyle if it exists
-            if "textStyle" in self._raw_data["style"]:
-                del self._raw_data["style"]["textStyle"]
 
     def __str__(self) -> str:
         """Provides a user-friendly string representation."""

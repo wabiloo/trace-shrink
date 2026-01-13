@@ -1,9 +1,8 @@
 # src/abr_capture_spy/har_reader.py
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from .har_entry import HarEntry
-from .trace_entry import TraceEntry  # For type hinting
 from .trace_reader import TraceReader
 
 
@@ -105,28 +104,3 @@ class HarReader(TraceReader):
 
     def get_har_creator_info(self) -> Optional[Dict[str, Any]]:
         return self._raw_har_data.get("log", {}).get("creator")
-
-    def save(self, output_path: Optional[str] = None) -> None:
-        """
-        Save the modified HAR file to disk.
-
-        Since entries hold references to dictionaries within _raw_har_data,
-        modifications made to entries are automatically reflected in _raw_har_data.
-
-        Args:
-            output_path: Optional path to save the file. If not provided,
-                        saves to the original file path.
-
-        Raises:
-            IOError: If the file cannot be written.
-        """
-        if self._raw_har_data is None:
-            raise RuntimeError("Cannot save: HAR data not loaded.")
-
-        path = output_path or self.har_file_path
-
-        try:
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(self._raw_har_data, f, indent=2, ensure_ascii=False)
-        except IOError as e:
-            raise IOError(f"Failed to save HAR file to {path}: {e}") from e

@@ -2,8 +2,6 @@ import functools
 import json
 import os
 import re
-import shutil
-import tempfile
 import zipfile
 from typing import Any, Dict, Iterator, List, Optional
 
@@ -257,72 +255,3 @@ class ProxymanLogV2Reader(TraceReader):
     #                 pass
 
     #     return matching_entries
-
-    def save(self, output_path: Optional[str] = None) -> None:
-        """
-        Save the modified Proxyman log file to disk.
-
-        This method creates a new ZIP archive with updated entries.
-        Since ZIP files don't support in-place updates efficiently, we create
-        a new archive with all original files plus any modified entries.
-
-        Args:
-            output_path: Optional path to save the file. If not provided,
-                        saves to the original file path.
-
-        Raises:
-            IOError: If the file cannot be written.
-            RuntimeError: If there's an error processing the archive.
-        """
-        path = output_path or self.log_file_path
-
-        # Create a temporary file for the new archive
-        tmp_fd, tmp_path = tempfile.mkstemp(
-            suffix=".proxymanlogv2", dir=os.path.dirname(path) or "."
-        )
-        os.close(tmp_fd)
-
-        try:
-            # Track which entries have been parsed/modified (use cache if available)
-            modified_entries: Dict[str, Dict[str, Any]] = {}
-            # Use cached entries if available, otherwise parse them
-            for entry_filename in self._sorted_index:
-                if entry_filename in self._parsed_entries_cache:
-                    # Use cached entry (preserves modifications)
-                    entry = self._parsed_entries_cache[entry_filename]
-                    modified_entries[entry_filename] = entry._raw_data
-                else:
-                    # Parse entry if not cached
-                    entry = self._parse_entry(entry_filename)
-                    if entry:
-                        modified_entries[entry_filename] = entry._raw_data
-
-            # Create a new ZIP archive with updated entries
-            with zipfile.ZipFile(self.log_file_path, "r") as source_zip:
-                with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as dest_zip:
-                    # Copy all files from the original archive
-                    for item in source_zip.infolist():
-                        # If this is a modified entry, write the updated version
-                        if item.filename in modified_entries:
-                            entry_data = modified_entries[item.filename]
-                            dest_zip.writestr(
-                                item.filename,
-                                json.dumps(entry_data, indent=2, ensure_ascii=False),
-                            )
-                        else:
-                            # Copy the original file as-is
-                            dest_zip.writestr(item, source_zip.read(item.filename))
-
-            # Replace the original file with the updated one
-            shutil.move(tmp_path, path)
-
-        except Exception as e:
-            # Clean up temporary file on error
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    pass
-            raise RuntimeError(
-                f"Failed to save Proxyman log file to {path}: {e}"
-            ) from e

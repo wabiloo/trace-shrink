@@ -490,99 +490,6 @@ class HarEntry(TraceEntry):
         """Total time for the entry in milliseconds from the HAR spec."""
         return self._raw_data.get("time")
 
-    def set_comment(self, comment: str) -> None:
-        """
-        Set a comment on this entry.
-
-        Args:
-            comment: The comment text to add to this entry.
-        """
-        # Use TraceEntry's override mechanism
-        super().set_comment(comment)
-        # Also update _raw_data for backward compatibility
-        self._raw_data["comment"] = comment
-
-    def add_response_header(self, name: str, value: str) -> None:
-        """
-        Add or update a header in the response.
-
-        If a header with the same name already exists, its value will be updated.
-        Otherwise, a new header will be added.
-
-        Args:
-            name: The header name.
-            value: The header value.
-        """
-        # Use TraceEntry's override mechanism
-        super().add_response_header(name, value)
-
-        # Also update _raw_data for backward compatibility with export
-        if "response" not in self._raw_data:
-            self._raw_data["response"] = {}
-        if "headers" not in self._raw_data["response"]:
-            self._raw_data["response"]["headers"] = []
-
-        headers = self._raw_data["response"]["headers"]
-        # Check if header already exists and update it
-        for h in headers:
-            if h.get("name") == name:
-                h["value"] = value
-                return
-        # Add new header if it doesn't exist
-        headers.append({"name": name, "value": value})
-
-    def add_request_header(self, name: str, value: str) -> None:
-        """
-        Add or update a header in the request.
-
-        If a header with the same name already exists, its value will be updated.
-        Otherwise, a new header will be added.
-
-        Args:
-            name: The header name.
-            value: The header value.
-        """
-        # Use TraceEntry's override mechanism
-        super().add_request_header(name, value)
-        # Also update _raw_data for backward compatibility
-        if "request" not in self._raw_data:
-            self._raw_data["request"] = {}
-        if "headers" not in self._raw_data["request"]:
-            self._raw_data["request"]["headers"] = []
-
-        headers = self._raw_data["request"]["headers"]
-        # Check if header already exists and update it
-        for h in headers:
-            if h.get("name") == name:
-                h["value"] = value
-                return
-        # Add new header if it doesn't exist
-        headers.append({"name": name, "value": value})
-
-    def set_response_content(self, content: str) -> None:
-        """
-        Set the response body content.
-
-        This updates the content text in the raw data and clears any cached
-        decoded body to ensure the new content is used.
-
-        Args:
-            content: The new response body content as a string.
-        """
-        # Use TraceEntry's override mechanism
-        super().set_response_content(content)
-
-        # Also update _raw_data for backward compatibility with export
-        if "response" not in self._raw_data:
-            self._raw_data["response"] = {}
-        if "content" not in self._raw_data["response"]:
-            self._raw_data["response"]["content"] = {}
-
-        self._raw_data["response"]["content"]["text"] = content
-        # Clear encoding since we're setting plain text
-        if "encoding" in self._raw_data["response"]["content"]:
-            del self._raw_data["response"]["content"]["encoding"]
-
     def set_highlight(self, highlight: str) -> None:
         """
         Set a highlight style on this entry.
@@ -611,8 +518,6 @@ class HarEntry(TraceEntry):
         validate_highlight(highlight)
         # Use TraceEntry's override mechanism
         super().set_highlight(highlight)
-        # Also update _raw_data for backward compatibility
-        self._raw_data["_highlight"] = highlight
 
     def __str__(self) -> str:
         return f"HarEntry(id={self.id} {self.request.method} {self.request.url} -> {self.response.status_code})"
