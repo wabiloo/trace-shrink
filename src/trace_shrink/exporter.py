@@ -2,10 +2,11 @@
 Export functionality for converting between trace archive formats.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from .har_reader import HarReader
-from .proxyman_log_reader import ProxymanLogV2Reader
+from .har_writer import HarWriter
+from .proxyman_writer import ProxymanWriter
+from .trace import Trace
 from .trace_entry import TraceEntry
 from .trace_reader import TraceReader
 
@@ -29,7 +30,7 @@ class _ExportMethod:
                 output_path: str, entries: Optional[List[TraceEntry]] = None
             ) -> None:
                 if entries is None:
-                    entries = obj._reader.entries
+                    entries = obj._trace.entries
                 return self.export_func(entries, output_path)
 
             return instance_method
@@ -55,14 +56,19 @@ class Exporter:
         exporter.to_har("output.har", filtered_entries)  # Exports specific entries
     """
 
-    def __init__(self, archive_reader: ArchiveReader):
+    def __init__(self, source: Union[TraceReader, Trace]):
         """
-        Initialize the exporter with an archive reader.
+        Initialize the exporter with either a TraceReader or a Trace container.
 
         Args:
-            archive_reader: The ArchiveReader instance to export from.
+            source: The TraceReader or Trace instance to export from.
         """
-        self._reader = archive_reader
+        if isinstance(source, TraceReader):
+            self._trace = source.trace
+        elif isinstance(source, Trace):
+            self._trace = source
+        else:
+            raise TypeError("Exporter source must be a TraceReader or Trace instance.")
 
-    to_har = _ExportMethod(HarReader.export_entries)
-    to_proxyman = _ExportMethod(ProxymanLogV2Reader.export_entries)
+    to_har = _ExportMethod(HarWriter.write)
+    to_proxyman = _ExportMethod(ProxymanWriter.write)

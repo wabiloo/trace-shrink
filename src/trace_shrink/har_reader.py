@@ -1,6 +1,6 @@
 # src/abr_capture_spy/har_reader.py
 import json
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .har_entry import HarEntry
 from .trace_entry import TraceEntry  # For type hinting
@@ -25,7 +25,6 @@ class HarReader(TraceReader):
         """
         super().__init__()
         self.har_file_path = har_file_path
-        self._entries: List[HarEntry] = []
         self._raw_har_data: Optional[Dict[str, Any]] = None
 
         try:
@@ -56,7 +55,7 @@ class HarReader(TraceReader):
             for i, raw_entry_data in enumerate(raw_entries):
                 if isinstance(raw_entry_data, dict):
                     entry = HarEntry(raw_entry_data, self, i)
-                    self._entries.append(entry)
+                    self.trace.append(entry)
 
         except FileNotFoundError:
             # Keep specific error for file not found
@@ -73,11 +72,6 @@ class HarReader(TraceReader):
             raise RuntimeError(
                 f"Could not read or process HAR file {self.har_file_path}: {e!r}"
             )
-
-    @property
-    def entries(self) -> List[HarEntry]:
-        """Returns a list of all HarEntry objects."""
-        return self._entries
 
     # --- Implementation of ArchiveReader abstract methods ---
 
@@ -103,14 +97,6 @@ class HarReader(TraceReader):
     #             # Handle cases where URL might be malformed or access fails
     #             pass
     #     return matching_entries
-
-    def __len__(self) -> int:
-        """Returns the total number of entries."""
-        return len(self._entries)
-
-    def __iter__(self) -> Iterator[HarEntry]:  # Type hint concrete type
-        """Iterates over all entries in the archive."""
-        return iter(self._entries)
 
     # Placeholder for other potential methods specific to HarReader or common to ArchiveReader
     # For example, getting creator info, browser info from HAR log.
@@ -144,52 +130,3 @@ class HarReader(TraceReader):
                 json.dump(self._raw_har_data, f, indent=2, ensure_ascii=False)
         except IOError as e:
             raise IOError(f"Failed to save HAR file to {path}: {e}") from e
-
-    @staticmethod
-    def export_entries(entries: List[TraceEntry], output_path: str) -> None:
-        """
-        Export a list of TraceEntry objects to a HAR file.
-
-        Args:
-            entries: List of TraceEntry objects to export.
-            output_path: Path where the HAR file will be written.
-
-        Raises:
-            IOError: If the file cannot be written.
-        """
-        har_data = HarReader._build_har_structure(entries)
-
-        try:
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(har_data, f, indent=2, ensure_ascii=False)
-        except IOError as e:
-            raise IOError(f"Failed to write HAR file to {output_path}: {e}") from e
-
-    @staticmethod
-    def _build_har_structure(entries: List[TraceEntry]) -> Dict[str, Any]:
-        """
-        Build the complete HAR file structure from entries.
-
-        Args:
-            entries: List of TraceEntry objects to convert.
-
-        Returns:
-            Dictionary representing the HAR file structure.
-        """
-        from .version import get_package_version
-
-        har_entries = [
-            HarEntry.from_trace_entry(entry, index)
-            for index, entry in enumerate(entries)
-        ]
-
-        return {
-            "log": {
-                "version": "1.2",
-                "creator": {
-                    "name": "trace-shrink",
-                    "version": get_package_version(),
-                },
-                "entries": har_entries,
-            }
-        }

@@ -4,11 +4,11 @@ import re
 from collections.abc import Iterator
 from typing import Dict, List, Optional
 
-from .archive_reader import ArchiveReader
+from .trace_reader import TraceReader
 from .multifile_entry import MultiFileTraceEntry
 
 
-class MultiFileFolderArchive(ArchiveReader):
+class MultiFileFolderArchive(TraceReader):
     """ArchiveReader backed by a folder containing request_N.meta.json and request_N.body files."""
 
     META_RE = re.compile(r"request_(\d+)\.meta\.json$")
@@ -16,19 +16,21 @@ class MultiFileFolderArchive(ArchiveReader):
     def __init__(self, folder_path: str):
         super().__init__()
         self.folder_path = folder_path
-        self._entries_list: Optional[List[MultiFileTraceEntry]] = None
+        self._entries_loaded = False
 
     @property
     def entries(self) -> List[MultiFileTraceEntry]:
-        if self._entries_list is None:
-            self._entries_list = self._scan_folder()
-        return self._entries_list
+        if not self._entries_loaded:
+            entries = self._scan_folder()
+            self.trace.extend(entries)
+            self._entries_loaded = True
+        return self.trace.entries
 
     def __len__(self) -> int:
         return len(self.entries)
 
     def __iter__(self) -> Iterator[MultiFileTraceEntry]:
-        return iter(self.entries)
+        return iter(self.trace)
 
     def _scan_folder(self) -> List[MultiFileTraceEntry]:
         if not os.path.isdir(self.folder_path):

@@ -50,8 +50,8 @@ def test_har_reader_init_success(har_reader: HarReader, real_har_file_path: Path
     assert har_reader.har_file_path == str(real_har_file_path)
     assert har_reader._raw_har_data is not None
     assert "log" in har_reader._raw_har_data
-    assert len(har_reader._entries) > 0
-    assert isinstance(har_reader._entries[0], HarEntry)
+    assert len(har_reader.entries) > 0
+    assert isinstance(har_reader.entries[0], HarEntry)
 
 
 def test_har_reader_init_file_not_found():

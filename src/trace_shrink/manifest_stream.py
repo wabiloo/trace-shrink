@@ -32,16 +32,15 @@ class ManifestStream:
             )
 
         # Sort entries by the request start timestamp. Handle cases where timestamp might be None.
-        self.entries = sorted(
-            entries,
-            key=lambda e: (e.timeline.request_start or datetime.min).astimezone(
-                timezone.utc
-            ),
-        )
-        # Ensure all timestamps are timezone-aware (UTC)
-        self.timestamps = [
-            (e.timeline.request_start or datetime.min).astimezone(timezone.utc)
-            for e in self.entries
+        def _normalize_timestamp(entry: TraceEntry) -> datetime:
+            start = entry.timeline.request_start
+            if isinstance(start, datetime):
+                return start.astimezone(timezone.utc)
+            return datetime.min.replace(tzinfo=timezone.utc)
+
+        self.entries = sorted(entries, key=_normalize_timestamp)
+        self.timestamps = [  # Ensure all timestamps are timezone-aware (UTC)
+            _normalize_timestamp(entry) for entry in self.entries
         ]
         # Determine format from the first entry
         first_entry = self.entries[0]

@@ -43,8 +43,10 @@ class ProxymanLogV2Reader(TraceReader):
 
         self._index: Dict[str, Dict[str, Any]] = {}
         self._parsed_entries_cache: Dict[str, ProxymanLogV2Entry] = {}
+        self._trace_populated = False
         try:
             self._scan_and_index()
+            self._populate_trace_entries()
         except Exception as e:
             raise RuntimeError(
                 f"Failed to initialize ProxymanLogV2Reader due to scan error: {e}"
@@ -101,6 +103,17 @@ class ProxymanLogV2Reader(TraceReader):
         except Exception as e:
             raise RuntimeError(f"Unexpected error during archive scan: {e}")
 
+    def _populate_trace_entries(self) -> None:
+        if self._trace_populated:
+            return
+
+        for filename in self._sorted_index:
+            entry = self._parse_entry(filename)
+            if entry:
+                self.trace.append(entry)
+
+        self._trace_populated = True
+
     @functools.cached_property
     def _sorted_index(self) -> List[str]:
         """Returns a list of all indexed request entry filenames, sorted by their numerical index.
@@ -125,11 +138,7 @@ class ProxymanLogV2Reader(TraceReader):
 
     def __iter__(self) -> Iterator[ProxymanLogV2Entry]:
         """Iterates over all ProxymanLogV2Entry objects in the archive, sorted by their numerical index."""
-        all_entry_filenames = self._sorted_index
-        for filename in all_entry_filenames:
-            entry_obj = self._parse_entry(filename)
-            if entry_obj:
-                yield entry_obj
+        return iter(self.trace)
 
     def _parse_entry(self, entry_filename: str) -> Optional[ProxymanLogV2Entry]:
         """
@@ -175,9 +184,8 @@ class ProxymanLogV2Reader(TraceReader):
         Returns a list of all ProxymanLogV2Entry objects, sorted by their numerical index.
 
         Accessing this property will trigger the loading of all entries from the archive.
-        For lazy iteration, directly iterate over the reader instance (e.g., `for entry in reader:`).
         """
-        return list(self)
+        return list(self.trace)
 
     @functools.lru_cache(maxsize=256)
     def list_entries_by_host(self, host_to_match: Optional[str]) -> List[str]:
@@ -317,50 +325,4 @@ class ProxymanLogV2Reader(TraceReader):
                     pass
             raise RuntimeError(
                 f"Failed to save Proxyman log file to {path}: {e}"
-            ) from e
-
-    @staticmethod
-    def export_entries(entries: List[TraceEntry], output_path: str) -> None:
-        """
-        Export a list of TraceEntry objects to a Proxyman log v2 file.
-
-        Args:
-            entries: List of TraceEntry objects to export.
-            output_path: Path where the Proxyman log file will be written.
-
-        Raises:
-            IOError: If the file cannot be written.
-        """
-        from .proxyman_entry import ProxymanLogV2Entry
-
-        proxyman_entries = [
-            ProxymanLogV2Entry.from_trace_entry(entry, index)
-            for index, entry in enumerate(entries)
-        ]
-
-        # Create a temporary file for the ZIP archive
-        tmp_fd, tmp_path = tempfile.mkstemp(
-            suffix=".proxymanlogv2", dir=os.path.dirname(output_path) or "."
-        )
-        os.close(tmp_fd)
-
-        try:
-            with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zip_ref:
-                for entry_data, entry_filename in proxyman_entries:
-                    zip_ref.writestr(
-                        entry_filename,
-                        json.dumps(entry_data, indent=2, ensure_ascii=False),
-                    )
-
-            # Move the temporary file to the final location
-            os.replace(tmp_path, output_path)
-        except Exception as e:
-            # Clean up temporary file on error
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    pass
-            raise IOError(
-                f"Failed to write Proxyman log file to {output_path}: {e}"
             ) from e
