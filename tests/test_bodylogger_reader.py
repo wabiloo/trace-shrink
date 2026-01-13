@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from trace_shrink import BodyLoggerReader, BodyLoggerEntry, open_trace
@@ -138,6 +138,20 @@ class TestBodyLoggerReader:
 
         # Test that response_end is after request_start
         assert entry.timeline.response_end >= entry.timeline.request_start
+
+        # Verify that response_end equals the timestamp from the log file
+        # (the timestamp in the log file represents response_end)
+        raw_data = entry.get_raw_data()
+        assert entry.timeline.response_end == raw_data["timestamp"]
+
+        # Verify that request_start = response_end - request_time
+        request_time = raw_data["request_time"]
+        expected_request_start = entry.timeline.response_end - timedelta(
+            seconds=request_time
+        )
+        assert abs(
+            (entry.timeline.request_start - expected_request_start).total_seconds()
+        ) < 0.0001  # Allow small floating point differences
 
     def test_entry_bodylogger_specific_properties(self):
         """Test bodylogger-specific properties."""

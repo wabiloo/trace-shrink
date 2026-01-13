@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .bodylogger_entry import BodyLoggerEntry
 from .trace_reader import TraceReader
@@ -49,8 +49,6 @@ class BodyLoggerReader(TraceReader):
         """
         super().__init__()
         self.log_file_path = log_file_path
-        self._entries: List[BodyLoggerEntry] = []
-        self._records: List[Dict[str, Any]] = []
 
         try:
             self._parse_file()
@@ -66,6 +64,8 @@ class BodyLoggerReader(TraceReader):
         with open(self.log_file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
+        records: List[Dict[str, Any]] = []
+
         # Split by timestamp pattern
         log_entries = re.split(
             r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[,:]\d{3})", content
@@ -79,6 +79,7 @@ class BodyLoggerReader(TraceReader):
 
             try:
                 # --- Timestamp ---
+                # The timestamp in the log file represents response_end
                 if timestamp_str[19] == ":":
                     timestamp_str = f"{timestamp_str[:19]},{timestamp_str[20:]}"
                 timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f")
@@ -185,29 +186,16 @@ class BodyLoggerReader(TraceReader):
                         "session_id": session_id,
                         "content_type": content_type,
                     }
-                    self._records.append(record)
+                    records.append(record)
 
             except (IndexError, ValueError):
                 # Skip malformed log entries
                 pass
 
         # Create BodyLoggerEntry objects from parsed records
-        for idx, record in enumerate(self._records):
+        for idx, record in enumerate(records):
             entry = BodyLoggerEntry(record, self, idx)
-            self._entries.append(entry)
-
-    @property
-    def entries(self) -> List[BodyLoggerEntry]:
-        """Returns a list of all BodyLoggerEntry objects."""
-        return self._entries
-
-    def __len__(self) -> int:
-        """Returns the total number of entries."""
-        return len(self._entries)
-
-    def __iter__(self) -> Iterator[BodyLoggerEntry]:
-        """Iterates over all entries in the archive."""
-        return iter(self._entries)
+            self.trace.append(entry)
 
     def query(
         self,
@@ -230,7 +218,7 @@ class BodyLoggerReader(TraceReader):
         Returns:
             A list of BodyLoggerEntry objects matching the criteria.
         """
-        filtered_entries = self._entries
+        filtered_entries = self.trace.entries
 
         if log_type:
             filtered_entries = [

@@ -171,13 +171,16 @@ class _BodyLoggerTimelineDetails(TimelineDetails):
     """Implementation of TimelineDetails for a bodylogger entry."""
 
     def __init__(self, timestamp: datetime, request_time: float):
+        # The timestamp from the log file represents response_end
         self._timestamp = timestamp
         self._request_time = request_time  # in seconds
 
     @property
     def request_start(self) -> Optional[datetime]:
-        """Return the request start time."""
-        return self._timestamp
+        """Return the request start time (response_end - request_time)."""
+        if self._timestamp is not None:
+            return self._timestamp - timedelta(seconds=self._request_time)
+        return None
 
     @property
     def request_end(self) -> Optional[datetime]:
@@ -191,10 +194,8 @@ class _BodyLoggerTimelineDetails(TimelineDetails):
 
     @property
     def response_end(self) -> Optional[datetime]:
-        """Return the response end time (request_start + request_time)."""
-        if self._timestamp is not None:
-            return self._timestamp + timedelta(seconds=self._request_time)
-        return None
+        """Return the response end time (the timestamp from the log file)."""
+        return self._timestamp
 
 
 class BodyLoggerEntry(TraceEntry):
