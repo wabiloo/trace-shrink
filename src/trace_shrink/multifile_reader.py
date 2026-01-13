@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Iterator
-from typing import Dict, List, Optional
+from typing import List
 
 from .multifile_entry import MultiFileTraceEntry
 from .trace_reader import TraceReader

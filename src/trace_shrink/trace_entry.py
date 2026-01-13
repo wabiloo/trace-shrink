@@ -4,6 +4,7 @@ from typing import Dict, Optional
 import yarl
 
 from trace_shrink.formats import MimeType
+from trace_shrink.highlight import validate_highlight
 
 
 class RequestDetails:
@@ -271,7 +272,25 @@ class TraceEntry:
         self._override_comment = comment
 
     def set_highlight(self, highlight: str) -> None:
-        """Set a highlight style on this entry."""
+        """
+        Set a highlight style on this entry.
+
+        Supported values:
+        - "red" (0)
+        - "yellow" (1)
+        - "green" (2)
+        - "blue" (3)
+        - "purple" (4)
+        - "grey" (5)
+        - "strike" (strike-through)
+
+        Args:
+            highlight: The highlight style to apply.
+
+        Raises:
+            ValueError: If an invalid highlight value is provided.
+        """
+        validate_highlight(highlight)
         self._override_highlight = highlight
 
     def add_request_header(self, name: str, value: str) -> None:
