@@ -1,169 +1,317 @@
-from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, Optional  # Add yarl.URL later
+from typing import Dict, Optional
 
 import yarl
 
 from trace_shrink.formats import MimeType
 
 
-class RequestDetails(ABC):
-    """Abstract base class for details of an HTTP request."""
+class RequestDetails:
+    """Concrete class for details of an HTTP request."""
+
+    def __init__(
+        self,
+        url: yarl.URL,
+        method: str,
+        headers: Dict[str, str],
+        body: Optional[bytes] = None,
+    ):
+        self._url = url
+        self._method = method
+        self._headers = headers.copy()
+        self._body = body
 
     @property
-    @abstractmethod
     def url(self) -> yarl.URL:
         """The URL of the request."""
-        pass
+        return self._url
 
     @property
-    @abstractmethod
     def headers(self) -> Dict[str, str]:
         """A dictionary of request headers."""
-        pass
+        return self._headers.copy()
 
     @property
-    @abstractmethod
     def method(self) -> str:
         """The HTTP method (e.g., 'GET', 'POST')."""
-        pass
-
-
-class ResponseBodyDetails(ABC):
-    """Abstract base class for details of an HTTP response body."""
+        return self._method
 
     @property
-    @abstractmethod
+    def body(self) -> Optional[bytes]:
+        """The request body, if available."""
+        return self._body
+
+
+class ResponseBodyDetails:
+    """Concrete class for details of an HTTP response body."""
+
+    def __init__(
+        self,
+        text: Optional[str] = None,
+        raw_size: Optional[int] = None,
+        compressed_size: Optional[int] = None,
+        decoded_body: Optional[bytes] = None,
+    ):
+        self._text = text
+        self._raw_size = raw_size
+        self._compressed_size = compressed_size
+        self._decoded_body = decoded_body
+
+    def _get_decoded_body(self) -> Optional[bytes]:
+        """Get the decoded body as bytes."""
+        if self._decoded_body is not None:
+            return self._decoded_body
+        if self._text is not None:
+            return self._text.encode("utf-8")
+        return None
+
+    @property
     def text(self) -> Optional[str]:
         """The textual content of the response body, if available."""
-        pass
+        return self._text
 
     @property
-    @abstractmethod
     def raw_size(self) -> Optional[int]:
         """The raw size of the response body in bytes."""
-        pass
+        return self._raw_size
 
     @property
-    @abstractmethod
-    def compressed_size(self) -> Optional[int]:  # Transfer size
+    def compressed_size(self) -> Optional[int]:
         """The compressed (transfer) size of the response body in bytes."""
-        pass
+        return self._compressed_size
 
 
-class ResponseDetails(ABC):
-    """Abstract base class for details of an HTTP response."""
+class ResponseDetails:
+    """Concrete class for details of an HTTP response."""
+
+    def __init__(
+        self,
+        headers: Dict[str, str],
+        status_code: int,
+        mime_type: Optional[str] = None,
+        content_type: Optional[str] = None,
+        body: Optional[ResponseBodyDetails] = None,
+    ):
+        self._headers = headers.copy()
+        self._status_code = status_code
+        self._mime_type = mime_type
+        self._content_type = content_type or mime_type
+        self._body = body or ResponseBodyDetails()
 
     @property
-    @abstractmethod
     def headers(self) -> Dict[str, str]:
         """A dictionary of response headers."""
-        pass
+        return self._headers.copy()
 
     @property
-    @abstractmethod
     def mime_type(self) -> Optional[str]:
         """The MIME type of the response."""
-        pass
+        return self._mime_type
 
     @property
-    @abstractmethod
     def content_type(self) -> Optional[str]:
         """The content type of the response."""
-        pass
+        return self._content_type
 
     @property
-    @abstractmethod
     def body(self) -> ResponseBodyDetails:
         """Details of the response body."""
-        pass
+        return self._body
 
     @property
-    @abstractmethod
     def status_code(self) -> int:
         """The HTTP status code of the response."""
-        pass
+        return self._status_code
 
 
-class TimelineDetails(ABC):
-    """Abstract base class for timeline details of an HTTP exchange."""
+class TimelineDetails:
+    """Concrete class for timeline details of an HTTP exchange."""
+
+    def __init__(
+        self,
+        request_start: Optional[datetime] = None,
+        request_end: Optional[datetime] = None,
+        response_start: Optional[datetime] = None,
+        response_end: Optional[datetime] = None,
+    ):
+        self._request_start = request_start
+        self._request_end = request_end
+        self._response_start = response_start
+        self._response_end = response_end
 
     @property
-    @abstractmethod
     def request_start(self) -> Optional[datetime]:
         """The start time of the request."""
-        pass
+        return self._request_start
 
     @property
-    @abstractmethod
     def request_end(self) -> Optional[datetime]:
         """The end time of the request."""
-        pass
+        return self._request_end
 
     @property
-    @abstractmethod
     def response_start(self) -> Optional[datetime]:
         """The start time of the response."""
-        pass
+        return self._response_start
 
     @property
-    @abstractmethod
     def response_end(self) -> Optional[datetime]:
         """The end time of the response."""
-        pass
+        return self._response_end
 
 
-class TraceEntry(ABC):
-    """Abstract base class for a single entry in a trace archive."""
+class MergedResponseDetails(ResponseDetails):
+    """ResponseDetails wrapper that merges original headers with overrides."""
+
+    def __init__(
+        self,
+        original: ResponseDetails,
+        override_headers: Dict[str, str],
+    ):
+        # Merge headers: overrides take precedence
+        merged_headers = original.headers.copy()
+        merged_headers.update(override_headers)
+
+        super().__init__(
+            headers=merged_headers,
+            status_code=original.status_code,
+            mime_type=original.mime_type,
+            content_type=original.content_type,
+            body=original.body,
+        )
+
+
+class TraceEntry:
+    """Concrete model class for a single entry in a trace archive."""
+
+    def __init__(
+        self,
+        index: int,
+        entry_id: str,
+        request: RequestDetails,
+        response: ResponseDetails,
+        timeline: TimelineDetails,
+        comment: Optional[str] = None,
+        highlight: Optional[str] = None,
+    ):
+        self._index = index
+        self._id = entry_id
+        self._request = request
+        self._response = response
+        self._timeline = timeline
+        self._comment = comment
+        self._highlight = highlight
+
+        # Override storage for mutations
+        self._override_comment: Optional[str] = None
+        self._override_highlight: Optional[str] = None
+        self._override_request_headers: Dict[str, str] = {}
+        self._override_response_headers: Dict[str, str] = {}
+        self._override_response_content: Optional[str] = None
 
     @property
-    @abstractmethod
     def index(self) -> int:
         """The zero-based index of the entry in the archive."""
-        pass
+        return self._index
 
     @property
-    @abstractmethod
     def id(self) -> str:
         """A unique identifier for the entry."""
-        pass
+        return self._id
 
     @property
-    @abstractmethod
     def request(self) -> RequestDetails:
-        """Details of the HTTP request."""
-        pass
+        """Details of the HTTP request, with merged override headers."""
+        if self._override_request_headers:
+            # Create a new RequestDetails with merged headers
+            merged_headers = self._request.headers.copy()
+            merged_headers.update(self._override_request_headers)
+            return RequestDetails(
+                url=self._request.url,
+                method=self._request.method,
+                headers=merged_headers,
+                body=self._request.body,
+            )
+        return self._request
 
     @property
-    @abstractmethod
     def response(self) -> ResponseDetails:
-        """Details of the HTTP response."""
-        pass
+        """Details of the HTTP response, with merged override headers."""
+        if self._override_response_headers:
+            return MergedResponseDetails(
+                self._response, self._override_response_headers
+            )
+        return self._response
 
     @property
-    @abstractmethod
+    def timeline(self) -> TimelineDetails:
+        """Timeline details of the HTTP exchange."""
+        return self._timeline
+
+    @property
     def comment(self) -> Optional[str]:
         """An optional comment for the entry."""
-        pass
+        return (
+            self._override_comment
+            if self._override_comment is not None
+            else self._comment
+        )
 
     @property
-    @abstractmethod
     def highlight(self) -> Optional[str]:
         """An optional highlight style for the entry (e.g., 'red', 'yellow', 'strike')."""
-        pass
+        return (
+            self._override_highlight
+            if self._override_highlight is not None
+            else self._highlight
+        )
 
-    @property
-    @abstractmethod
-    def timeline(self) -> TimelineDetails:  # Or specific timing attributes directly
-        """Timeline details of the HTTP exchange."""
-        pass
+    def set_comment(self, comment: str) -> None:
+        """Set a comment on this entry."""
+        self._override_comment = comment
+
+    def set_highlight(self, highlight: str) -> None:
+        """Set a highlight style on this entry."""
+        self._override_highlight = highlight
+
+    def add_request_header(self, name: str, value: str) -> None:
+        """Add or update a header in the request."""
+        self._override_request_headers[name] = value
+
+    def add_response_header(self, name: str, value: str) -> None:
+        """Add or update a header in the response."""
+        self._override_response_headers[name] = value
+
+    def set_response_content(self, content: str) -> None:
+        """Set the response body content."""
+        self._override_response_content = content
 
     @property
     def content(self) -> bytes | str:
         """The content of the entry, extracted from the response body."""
-        b = self.response.body
+        # Check override first
+        if self._override_response_content is not None:
+            return self._override_response_content
+
+        # Fall back to reading from response body
+        body = self.response.body
 
         if MimeType(self.response.content_type).has_text_content():
-            return b.text
+            return body.text or ""
         else:
-            return b._get_decoded_body()
+            decoded = body._get_decoded_body()
+            return decoded if decoded is not None else b""
+
+    def __str__(self) -> str:
+        """String representation of the entry."""
+        return (
+            f"TraceEntry(id={self.id} {self.request.method} "
+            f"{self.request.url} -> {self.response.status_code})"
+        )
+
+    def __repr__(self) -> str:
+        """Detailed string representation of the entry."""
+        return (
+            f"<TraceEntry id={self.id} {self.request.method} "
+            f"{self.request.url} -> {self.response.status_code}>"
+        )

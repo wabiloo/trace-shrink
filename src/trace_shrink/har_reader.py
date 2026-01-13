@@ -73,7 +73,7 @@ class HarReader(TraceReader):
                 f"Could not read or process HAR file {self.har_file_path}: {e!r}"
             )
 
-    # --- Implementation of ArchiveReader abstract methods ---
+    # --- Implementation of TraceReader abstract methods ---
 
     # def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
     #     """
@@ -98,7 +98,7 @@ class HarReader(TraceReader):
     #             pass
     #     return matching_entries
 
-    # Placeholder for other potential methods specific to HarReader or common to ArchiveReader
+    # Placeholder for other potential methods specific to HarReader or common to TraceReader
     # For example, getting creator info, browser info from HAR log.
     def get_har_log_version(self) -> Optional[str]:
         return self._raw_har_data.get("log", {}).get("version")

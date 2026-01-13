@@ -1,7 +1,7 @@
 # src/abr_capture_spy/har_entry.py
 import base64
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from yarl import URL
 
@@ -206,6 +206,13 @@ class _HarResponseDetails(ResponseDetails):
             value = h.get("value")
             if name:
                 hdrs[name] = value if value is not None else ""
+
+        # Merge annotation cache headers (from add_response_header)
+        if hasattr(self._parent_entry, "_annotation_cache"):
+            hdrs.update(
+                self._parent_entry._annotation_cache.get("response_headers", {})
+            )
+
         return hdrs
 
     @property
@@ -257,6 +264,100 @@ class _HarTimelineDetails(TimelineDetails):
         return None
 
 
+def _parse_har_body(
+    content_data: Dict[str, Any], response_headers: Dict[str, str]
+) -> tuple[Optional[str], Optional[bytes], Optional[int], Optional[int]]:
+    """Parse HAR response body data.
+
+    Returns: (text, decoded_body, raw_size, compressed_size)
+    """
+    text_content = content_data.get("text")
+    har_encoding_field = content_data.get("encoding")
+    decoded_body_cache: Optional[bytes] = None
+
+    if text_content is None:
+        return None, None, content_data.get("size"), None
+
+    # Decode body
+    if har_encoding_field == "base64" and isinstance(text_content, str):
+        try:
+            decoded_body_cache = base64.b64decode(text_content)
+        except Exception:
+            decoded_body_cache = None
+    elif isinstance(text_content, str):
+        mime_type_in_content_obj = content_data.get("mimeType", "").lower()
+        actual_text_encoding = "utf-8"
+
+        if "charset=" in mime_type_in_content_obj:
+            try:
+                actual_text_encoding = (
+                    mime_type_in_content_obj.split("charset=")[-1].split(";")[0].strip()
+                )
+            except IndexError:
+                pass
+        else:
+            content_type_header = response_headers.get("Content-Type", "").lower()
+            if "charset=" in content_type_header:
+                try:
+                    actual_text_encoding = (
+                        content_type_header.split("charset=")[-1].split(";")[0].strip()
+                    )
+                except IndexError:
+                    pass
+        try:
+            decoded_body_cache = text_content.encode(actual_text_encoding)
+        except (LookupError, UnicodeEncodeError):
+            try:
+                decoded_body_cache = text_content.encode("utf-8", errors="replace")
+            except Exception:
+                decoded_body_cache = None
+    elif isinstance(text_content, (bytes, bytearray)):
+        decoded_body_cache = bytes(text_content)
+
+    # Get text
+    text = None
+    if decoded_body_cache is not None:
+        mime_type_from_content = content_data.get("mimeType", "").lower()
+        final_encoding = "utf-8"
+
+        if "charset=" in mime_type_from_content:
+            try:
+                final_encoding = (
+                    mime_type_from_content.split("charset=")[-1].split(";")[0].strip()
+                )
+            except IndexError:
+                pass
+        else:
+            content_type_header = response_headers.get("Content-Type", "").lower()
+            if "charset=" in content_type_header:
+                try:
+                    final_encoding = (
+                        content_type_header.split("charset=")[-1].split(";")[0].strip()
+                    )
+                except IndexError:
+                    pass
+        try:
+            text = decoded_body_cache.decode(final_encoding, errors="replace")
+        except LookupError:
+            try:
+                text = decoded_body_cache.decode("utf-8", errors="replace")
+            except Exception:
+                text = None
+        except Exception:
+            text = None
+
+    # Get sizes
+    raw_size = content_data.get("size")
+    if isinstance(raw_size, int) and raw_size >= 0:
+        pass
+    elif decoded_body_cache is not None:
+        raw_size = len(decoded_body_cache)
+    else:
+        raw_size = 0
+
+    return text, decoded_body_cache, raw_size, None
+
+
 class HarEntry(TraceEntry):
     """
     Represents a single entry in a HAR file, providing access to request,
@@ -274,55 +375,109 @@ class HarEntry(TraceEntry):
         """
         self._raw_data = har_entry_data
         self._reader = reader
-        self._index = entry_index
-        self._request = _HarRequestDetails(self._raw_data.get("request", {}), self)
-        self._response = _HarResponseDetails(self._raw_data.get("response", {}), self)
-        self._timeline = _HarTimelineDetails(
-            self._raw_data.get("startedDateTime"), self._raw_data.get("time")
+
+        # Parse request
+        request_data = har_entry_data.get("request", {})
+        raw_url = request_data.get("url", "")
+        try:
+            url = URL(raw_url)
+        except ValueError:
+            url = URL("")
+
+        request_headers_dict: Dict[str, str] = {}
+        har_headers: List[Dict[str, str]] = request_data.get("headers", [])
+        for h in har_headers:
+            name = h.get("name")
+            value = h.get("value")
+            if name:
+                request_headers_dict[name] = value if value is not None else ""
+
+        request = RequestDetails(
+            url=url,
+            method=request_data.get("method", "GET").upper(),
+            headers=request_headers_dict,
         )
 
-    @property
-    def index(self) -> int:
-        """The zero-based index of the entry in the archive."""
-        return self._index
+        # Parse response
+        response_data = har_entry_data.get("response", {})
+        response_headers_dict: Dict[str, str] = {}
+        har_response_headers: List[Dict[str, str]] = response_data.get("headers", [])
+        for h in har_response_headers:
+            name = h.get("name")
+            value = h.get("value")
+            if name:
+                response_headers_dict[name] = value if value is not None else ""
 
-    @property
-    def id(self) -> str:
-        """
-        A unique identifier for the entry, if available.
-        In HAR, this can be a custom field, but is not standard.
-        Falls back to the entry's index as a string.
-        """
-        # HAR does not have a standard entry ID like proxyman.
-        # Check for a common custom field `_id` or `id`.
-        return self._raw_data.get(
-            "_id", self._raw_data.get("id", f"index-{self.index}")
+        content_data = response_data.get("content", {})
+        body_text, body_decoded, raw_size, _ = _parse_har_body(
+            content_data, response_headers_dict
         )
 
-    @property
-    def request(self) -> RequestDetails:
-        """Details of the HTTP request."""
-        return self._request
+        compressed_size = response_data.get("bodySize")
+        if isinstance(compressed_size, int) and compressed_size >= 0:
+            pass
+        else:
+            compressed_size = raw_size or 0
 
-    @property
-    def response(self) -> ResponseDetails:
-        """Details of the HTTP response."""
-        return self._response
+        content_type = content_data.get("mimeType")
+        mime_type = (
+            content_type.split(";")[0].strip()
+            if content_type and isinstance(content_type, str)
+            else None
+        )
 
-    @property
-    def comment(self) -> Optional[str]:
-        """An optional comment for the entry."""
-        return self._raw_data.get("comment")
+        response_body = ResponseBodyDetails(
+            text=body_text,
+            raw_size=raw_size,
+            compressed_size=compressed_size,
+            decoded_body=body_decoded,
+        )
 
-    @property
-    def highlight(self) -> Optional[str]:
-        """An optional highlight style for the entry."""
-        return self._raw_data.get("_highlight")
+        response = ResponseDetails(
+            headers=response_headers_dict,
+            status_code=response_data.get("status", 0),
+            mime_type=mime_type,
+            content_type=content_type,
+            body=response_body,
+        )
 
-    @property
-    def timeline(self) -> TimelineDetails:
-        """Timeline details of the HTTP exchange."""
-        return self._timeline
+        # Parse timeline
+        started_date_time = har_entry_data.get("startedDateTime")
+        duration_ms = har_entry_data.get("time", 0.0)
+
+        request_start = None
+        if started_date_time:
+            try:
+                request_start = datetime.fromisoformat(started_date_time)
+            except ValueError:
+                request_start = None
+
+        response_end = None
+        if request_start and duration_ms:
+            response_end = request_start + timedelta(milliseconds=duration_ms)
+
+        timeline = TimelineDetails(
+            request_start=request_start,
+            request_end=None,  # Not available in HAR
+            response_start=None,  # Not available in HAR
+            response_end=response_end,
+        )
+
+        # Entry ID
+        entry_id = har_entry_data.get(
+            "_id", har_entry_data.get("id", f"index-{entry_index}")
+        )
+
+        # Initialize TraceEntry
+        super().__init__(
+            index=entry_index,
+            entry_id=str(entry_id),
+            request=request,
+            response=response,
+            timeline=timeline,
+            comment=har_entry_data.get("comment"),
+            highlight=har_entry_data.get("_highlight"),
+        )
 
     def get_raw_json(self) -> Dict[str, Any]:
         """Returns the raw JSON data for this entry."""
@@ -342,6 +497,9 @@ class HarEntry(TraceEntry):
         Args:
             comment: The comment text to add to this entry.
         """
+        # Use TraceEntry's override mechanism
+        super().set_comment(comment)
+        # Also update _raw_data for backward compatibility
         self._raw_data["comment"] = comment
 
     def add_response_header(self, name: str, value: str) -> None:
@@ -355,6 +513,10 @@ class HarEntry(TraceEntry):
             name: The header name.
             value: The header value.
         """
+        # Use TraceEntry's override mechanism
+        super().add_response_header(name, value)
+
+        # Also update _raw_data for backward compatibility with export
         if "response" not in self._raw_data:
             self._raw_data["response"] = {}
         if "headers" not in self._raw_data["response"]:
@@ -380,6 +542,9 @@ class HarEntry(TraceEntry):
             name: The header name.
             value: The header value.
         """
+        # Use TraceEntry's override mechanism
+        super().add_request_header(name, value)
+        # Also update _raw_data for backward compatibility
         if "request" not in self._raw_data:
             self._raw_data["request"] = {}
         if "headers" not in self._raw_data["request"]:
@@ -404,6 +569,10 @@ class HarEntry(TraceEntry):
         Args:
             content: The new response body content as a string.
         """
+        # Use TraceEntry's override mechanism
+        super().set_response_content(content)
+
+        # Also update _raw_data for backward compatibility with export
         if "response" not in self._raw_data:
             self._raw_data["response"] = {}
         if "content" not in self._raw_data["response"]:
@@ -413,12 +582,6 @@ class HarEntry(TraceEntry):
         # Clear encoding since we're setting plain text
         if "encoding" in self._raw_data["response"]["content"]:
             del self._raw_data["response"]["content"]["encoding"]
-
-        # Clear the cached decoded body in _HarResponseBodyDetails
-        if hasattr(self._response, "_body_details"):
-            self._response._body_details._decoded_body_cache = None
-            # Also update the _data reference to point to the same content dict
-            self._response._body_details._data = self._raw_data["response"]["content"]
 
     def set_highlight(self, highlight: str) -> None:
         """
@@ -446,6 +609,9 @@ class HarEntry(TraceEntry):
         from .highlight import validate_highlight
 
         validate_highlight(highlight)
+        # Use TraceEntry's override mechanism
+        super().set_highlight(highlight)
+        # Also update _raw_data for backward compatibility
         self._raw_data["_highlight"] = highlight
 
     def __str__(self) -> str:
@@ -515,25 +681,38 @@ class HarEntry(TraceEntry):
 
         # Build response content
         response_body = entry.response.body
-        content_text = response_body.text
         content_size = response_body.raw_size or 0
         compressed_size = response_body.compressed_size or content_size
 
-        # Determine if body should be base64 encoded
+        # entry.content already checks for override_response_content first
         is_binary = False
-        if content_text is None:
-            try:
-                content = entry.content
-                if isinstance(content, bytes):
-                    content_text = base64.b64encode(content).decode("utf-8")
-                    is_binary = True
-                elif isinstance(content, str):
-                    content_text = content
-                else:
-                    content_text = ""
-            except Exception:
+        try:
+            content = entry.content
+            if isinstance(content, bytes):
+                content_text = base64.b64encode(content).decode("utf-8")
+                is_binary = True
+            elif isinstance(content, str):
+                content_text = content
+            else:
                 content_text = ""
-        else:
+            # Update content size based on actual content (in case override was used)
+            if isinstance(content, str):
+                content_size = len(content.encode("utf-8"))
+            elif isinstance(content, bytes):
+                content_size = len(content)
+            compressed_size = content_size
+        except Exception:
+            # Fallback only if entry.content fails and there's no override
+            if not (
+                hasattr(entry, "_override_response_content")
+                and entry._override_response_content is not None
+            ):
+                content_text = response_body.text or ""
+            else:
+                content_text = ""
+
+        # Determine if body should be base64 encoded based on mime type (if not already binary)
+        if content_text and not is_binary:
             mime_type = entry.response.mime_type or ""
             if not cls._is_text_content_for_har(mime_type, content_text):
                 try:

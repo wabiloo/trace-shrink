@@ -1,15 +1,16 @@
 from __future__ import annotations
+
 import os
 import re
 from collections.abc import Iterator
 from typing import Dict, List, Optional
 
-from .trace_reader import TraceReader
 from .multifile_entry import MultiFileTraceEntry
+from .trace_reader import TraceReader
 
 
 class MultiFileFolderArchive(TraceReader):
-    """ArchiveReader backed by a folder containing request_N.meta.json and request_N.body files."""
+    """TraceReader backed by a folder containing request_N.meta.json and request_N.body files."""
 
     META_RE = re.compile(r"request_(\d+)\.meta\.json$")
 
@@ -58,11 +59,15 @@ class MultiFileFolderArchive(TraceReader):
 
             # annotations: request_{idx}.digest.txt or *.txt
             ann_paths = []
-            digest_candidate = os.path.join(self.folder_path, f"request_{idx}.digest.txt")
+            digest_candidate = os.path.join(
+                self.folder_path, f"request_{idx}.digest.txt"
+            )
             if os.path.exists(digest_candidate):
                 ann_paths.append(digest_candidate)
 
-            entry = MultiFileTraceEntry.from_files(idx, meta_path, body_path or "", ann_paths)
+            entry = MultiFileTraceEntry.from_files(
+                idx, meta_path, body_path or "", ann_paths
+            )
             entries.append(entry)
 
         return entries

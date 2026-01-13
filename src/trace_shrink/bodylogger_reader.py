@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from .bodylogger_entry import BodyLoggerEntry
+from .bodylogger_entry import BodyLoggerEntry, parse_bodylogger_entry
 from .trace_reader import TraceReader
 
 
@@ -192,9 +192,9 @@ class BodyLoggerReader(TraceReader):
                 # Skip malformed log entries
                 pass
 
-        # Create BodyLoggerEntry objects from parsed records
+        # Create TraceEntry objects from parsed records
         for idx, record in enumerate(records):
-            entry = BodyLoggerEntry(record, self, idx)
+            entry = parse_bodylogger_entry(record, self, idx)
             self.trace.append(entry)
 
     def query(
