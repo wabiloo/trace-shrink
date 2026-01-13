@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 import yarl
 
-from trace_shrink.trace_reader import TraceReader, DecoratedUrl
 from trace_shrink.formats import Format
 from trace_shrink.har_reader import HarReader
 from trace_shrink.trace_entry import RequestDetails, ResponseDetails, TraceEntry
+from trace_shrink.trace_reader import DecoratedUrl, TraceReader
 
 
 # Concrete implementation of TraceReader for testing
@@ -39,7 +39,7 @@ def create_mock_entry(url_str: str, mime_type: str, entry_id: str = None) -> Tra
     return entry
 
 
-class TestArchiveReaderGetAbrManifestUrls:
+class TestTraceReaderGetAbrManifestUrls:
     def test_get_abr_manifest_urls_empty_archive(self):
         reader = MockTraceReader(entries=[])
         assert reader.get_abr_manifest_urls() == []
@@ -205,7 +205,7 @@ class TestArchiveReaderGetAbrManifestUrls:
         )
 
 
-class TestArchiveReaderGetEntriesForUrl:
+class TestTraceReaderGetEntriesForUrl:
     # --- Mock Tests ---
 
     def test_empty_archive(self):
@@ -238,7 +238,7 @@ class TestArchiveReaderGetEntriesForUrl:
         result = reader.get_entries_for_url(str(target_url))
         assert result == [entry1]
 
-        # If ArchiveReader.get_entries_for_url allowed yarl.URL for url_pattern (and MockTraceReader was updated):
+        # If TraceReader.get_entries_for_url allowed yarl.URL for url_pattern (and MockTraceReader was updated):
         # reader_yarl = MockTraceReader(entries=entries)
         # result_yarl = reader_yarl.get_entries_for_url(target_url) # Pass yarl.URL directly
         # assert result_yarl == [entry1]
@@ -461,7 +461,7 @@ class TestArchiveReaderGetEntriesForUrl:
         assert len(result) == 0
 
 
-class TestArchiveReaderGetEntryById:
+class TestTraceReaderGetEntryById:
     # --- Mock Tests ---
 
     def test_empty_archive(self):
@@ -500,16 +500,16 @@ class TestArchiveReaderGetEntryById:
         entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         # First call builds the index
         result1 = reader.get_entry_by_id("id-1")
         assert result1 == entry1
-        
+
         # Second call uses cached index
         assert reader._id_index is not None
         result2 = reader.get_entry_by_id("id-2")
         assert result2 == entry2
-        
+
         # Verify the index contains both entries
         assert len(reader._id_index) == 2
         assert reader._id_index["id-1"] == entry1
@@ -527,7 +527,7 @@ class TestArchiveReaderGetEntryById:
         # Get the first entry to find its ID
         first_entry = har_reader.entries[0]
         entry_id = first_entry.id
-        
+
         # Retrieve it by ID
         result = har_reader.get_entry_by_id(entry_id)
         assert result is not None
@@ -551,9 +551,14 @@ class TestArchiveReaderGetEntryById:
     # --- Real Proxyman File Tests ---
     @pytest.fixture(scope="class")
     def proxyman_reader(self):
-        proxyman_file_path = Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
-        assert proxyman_file_path.exists(), f"Proxyman file not found at {proxyman_file_path}"
+        proxyman_file_path = (
+            Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
+        )
+        assert proxyman_file_path.exists(), (
+            f"Proxyman file not found at {proxyman_file_path}"
+        )
         from trace_shrink.proxyman_log_reader import ProxymanLogV2Reader
+
         return ProxymanLogV2Reader(str(proxyman_file_path))
 
     def test_real_proxyman_get_entry_by_id_exists(self, proxyman_reader):
@@ -561,7 +566,7 @@ class TestArchiveReaderGetEntryById:
         # Get the first entry to find its ID
         first_entry = proxyman_reader.entries[0]
         entry_id = first_entry.id
-        
+
         # Retrieve it by ID
         result = proxyman_reader.get_entry_by_id(entry_id)
         assert result is not None
@@ -587,7 +592,7 @@ class TestArchiveReaderGetEntryById:
             assert retrieved.response.status_code == entry.response.status_code
 
 
-class TestArchiveReaderGetEntriesByIds:
+class TestTraceReaderGetEntriesByIds:
     """Tests for get_entries_by_ids method."""
 
     # --- Mock Tests ---
@@ -633,7 +638,7 @@ class TestArchiveReaderGetEntriesByIds:
         entry3 = create_mock_entry("http://example.com/page3", "text/html", "id-3")
         entries = [entry1, entry2, entry3]
         reader = MockTraceReader(entries=entries)
-        
+
         # Request in reverse order, but should return in original archive order
         result = reader.get_entries_by_ids(["id-3", "id-1", "id-2"])
         assert len(result) == 3
@@ -648,7 +653,7 @@ class TestArchiveReaderGetEntriesByIds:
         entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         with pytest.raises(ValueError, match="Entry IDs not found"):
             reader.get_entries_by_ids(["id-1", "id-nonexistent", "id-2"])
 
@@ -657,7 +662,7 @@ class TestArchiveReaderGetEntriesByIds:
         entry1 = create_mock_entry("http://example.com/page1", "text/html", "id-1")
         entries = [entry1]
         reader = MockTraceReader(entries=entries)
-        
+
         with pytest.raises(ValueError, match="Entry IDs not found"):
             reader.get_entries_by_ids(["id-nonexistent-1", "id-nonexistent-2"])
 
@@ -667,7 +672,7 @@ class TestArchiveReaderGetEntriesByIds:
         entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         # Request same ID twice - should return entry only once (in original order)
         result = reader.get_entries_by_ids(["id-1", "id-1"])
         assert len(result) == 1  # Duplicate IDs are deduplicated
@@ -679,18 +684,18 @@ class TestArchiveReaderGetEntriesByIds:
         entry2 = create_mock_entry("http://example.com/page2", "text/html", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         # First call builds the index
         result1 = reader.get_entries_by_ids(["id-1"])
         assert result1 == [entry1]
-        
+
         # Verify index was built
         assert reader._id_index is not None
-        
+
         # Second call uses cached index
         result2 = reader.get_entries_by_ids(["id-2"])
         assert result2 == [entry2]
-        
+
         # Verify the index contains both entries
         assert len(reader._id_index) == 2
 
@@ -706,10 +711,10 @@ class TestArchiveReaderGetEntriesByIds:
         # Get IDs from first 3 entries
         original_entries = har_reader.entries[:3]
         entry_ids = [entry.id for entry in original_entries]
-        
+
         result = har_reader.get_entries_by_ids(entry_ids)
         assert len(result) == 3
-        
+
         # Verify order matches original archive order
         for i, original_entry in enumerate(original_entries):
             assert result[i].id == original_entry.id
@@ -720,13 +725,13 @@ class TestArchiveReaderGetEntriesByIds:
         # Get entries and their IDs
         original_entries = har_reader.entries[:3]
         entry_ids = [entry.id for entry in original_entries]
-        
+
         # Request in reverse order
         reversed_ids = list(reversed(entry_ids))
-        
+
         result = har_reader.get_entries_by_ids(reversed_ids)
         assert len(result) == 3
-        
+
         # Verify order matches original archive order, not the reversed order requested
         for i, original_entry in enumerate(original_entries):
             assert result[i].id == original_entry.id
@@ -736,16 +741,21 @@ class TestArchiveReaderGetEntriesByIds:
         """Test that missing IDs raise ValueError from a real HAR file."""
         # Get a valid ID
         valid_id = har_reader.entries[0].id
-        
+
         with pytest.raises(ValueError, match="Entry IDs not found"):
             har_reader.get_entries_by_ids([valid_id, "nonexistent-id-12345"])
 
     # --- Real Proxyman File Tests ---
     @pytest.fixture(scope="class")
     def proxyman_reader(self):
-        proxyman_file_path = Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
-        assert proxyman_file_path.exists(), f"Proxyman file not found at {proxyman_file_path}"
+        proxyman_file_path = (
+            Path(__file__).parent / "archives" / "export-proxyman.proxymanlogv2"
+        )
+        assert proxyman_file_path.exists(), (
+            f"Proxyman file not found at {proxyman_file_path}"
+        )
         from trace_shrink.proxyman_log_reader import ProxymanLogV2Reader
+
         return ProxymanLogV2Reader(str(proxyman_file_path))
 
     def test_real_proxyman_get_entries_by_ids_exists(self, proxyman_reader):
@@ -753,43 +763,47 @@ class TestArchiveReaderGetEntriesByIds:
         # Get IDs from first 3 entries
         original_entries = proxyman_reader.entries[:3]
         entry_ids = [entry.id for entry in original_entries]
-        
+
         result = proxyman_reader.get_entries_by_ids(entry_ids)
         assert len(result) == 3
-        
+
         # Verify order matches original archive order and entries match
         for i, original_entry in enumerate(original_entries):
             assert result[i].id == original_entry.id
             assert str(result[i].request.url) == str(original_entry.request.url)
             assert result[i].response.status_code == original_entry.response.status_code
 
-    def test_real_proxyman_get_entries_by_ids_preserves_original_order(self, proxyman_reader):
+    def test_real_proxyman_get_entries_by_ids_preserves_original_order(
+        self, proxyman_reader
+    ):
         """Test that get_entries_by_ids preserves original archive order from a real Proxyman file."""
         # Get entries and their IDs
         original_entries = proxyman_reader.entries[:3]
         entry_ids = [entry.id for entry in original_entries]
-        
+
         # Request in reverse order
         reversed_ids = list(reversed(entry_ids))
-        
+
         result = proxyman_reader.get_entries_by_ids(reversed_ids)
         assert len(result) == 3
-        
+
         # Verify order matches original archive order, not the reversed order requested
         for i, original_entry in enumerate(original_entries):
             assert result[i].id == original_entry.id
             assert str(result[i].request.url) == str(original_entry.request.url)
 
-    def test_real_proxyman_get_entries_by_ids_missing_raises_error(self, proxyman_reader):
+    def test_real_proxyman_get_entries_by_ids_missing_raises_error(
+        self, proxyman_reader
+    ):
         """Test that missing IDs raise ValueError from a real Proxyman file."""
         # Get a valid ID
         valid_id = proxyman_reader.entries[0].id
-        
+
         with pytest.raises(ValueError, match="Entry IDs not found"):
             proxyman_reader.get_entries_by_ids([valid_id, "nonexistent-id-12345"])
 
 
-class TestArchiveReaderGetNextEntryById:
+class TestTraceReaderGetNextEntryById:
     # --- Mock Tests ---
 
     def test_get_next_entry_by_id_forward_single(self):
@@ -800,7 +814,7 @@ class TestArchiveReaderGetNextEntryById:
         entry3 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-3")
         entries = [entry1, entry2, entry3]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-1", direction=1, n=1)
         assert result == entry2
 
@@ -812,7 +826,7 @@ class TestArchiveReaderGetNextEntryById:
         entry3 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-3")
         entries = [entry1, entry2, entry3]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-3", direction=-1, n=1)
         assert result == entry2
 
@@ -825,7 +839,7 @@ class TestArchiveReaderGetNextEntryById:
         entry4 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-4")
         entries = [entry1, entry2, entry3, entry4]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-1", direction=1, n=3)
         assert result == entry4
 
@@ -838,7 +852,7 @@ class TestArchiveReaderGetNextEntryById:
         entry4 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-4")
         entries = [entry1, entry2, entry3, entry4]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-4", direction=-1, n=2)
         assert result == entry2
 
@@ -849,7 +863,7 @@ class TestArchiveReaderGetNextEntryById:
         entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-2", direction=1, n=1)
         assert result is None
 
@@ -860,7 +874,7 @@ class TestArchiveReaderGetNextEntryById:
         entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-1", direction=-1, n=1)
         assert result is None
 
@@ -870,7 +884,7 @@ class TestArchiveReaderGetNextEntryById:
         entry1 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-1")
         entries = [entry1]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-nonexistent", direction=1, n=1)
         assert result is None
 
@@ -884,11 +898,11 @@ class TestArchiveReaderGetNextEntryById:
         entry4 = create_mock_entry(url1, "application/vnd.apple.mpegurl", "id-4")
         entries = [entry1, entry2, entry3, entry4]
         reader = MockTraceReader(entries=entries)
-        
+
         # From id-1, next should be id-3 (skipping id-2 which has different URL)
         result = reader.get_next_entry_by_id("id-1", direction=1, n=1)
         assert result == entry3
-        
+
         # From id-3, previous should be id-1 (skipping id-2 which has different URL)
         result = reader.get_next_entry_by_id("id-3", direction=-1, n=1)
         assert result == entry1
@@ -900,7 +914,7 @@ class TestArchiveReaderGetNextEntryById:
         entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         # Should default to n=1
         result = reader.get_next_entry_by_id("id-1", direction=1)
         assert result == entry2
@@ -912,6 +926,6 @@ class TestArchiveReaderGetNextEntryById:
         entry2 = create_mock_entry(url, "application/vnd.apple.mpegurl", "id-2")
         entries = [entry1, entry2]
         reader = MockTraceReader(entries=entries)
-        
+
         result = reader.get_next_entry_by_id("id-1", direction=1, n=10)
         assert result is None
