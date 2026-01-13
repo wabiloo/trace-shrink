@@ -2,8 +2,8 @@ import re
 from datetime import datetime
 from typing import Any, Dict, Iterator, List, Optional
 
-from .archive_reader import ArchiveReader
 from .bodylogger_entry import BodyLoggerEntry
+from .trace_reader import TraceReader
 
 
 def _get_content_type(body: str) -> str:
@@ -31,7 +31,7 @@ def _get_content_type(body: str) -> str:
     return "text/plain"
 
 
-class BodyLoggerReader(ArchiveReader):
+class BodyLoggerReader(TraceReader):
     """
     Handles reading and indexing bodylogger log files.
     """

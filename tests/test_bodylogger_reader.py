@@ -2,8 +2,8 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 
-from trace_shrink import BodyLoggerReader, BodyLoggerEntry, open_archive
-from trace_shrink.archive_reader import ArchiveReader
+from trace_shrink import BodyLoggerReader, BodyLoggerEntry, open_trace
+from trace_shrink.trace_reader import TraceReader
 
 
 # Path to test bodylogger file
@@ -17,7 +17,7 @@ class TestBodyLoggerReader:
         """Test initialization with a valid bodylogger file."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
         assert isinstance(reader, BodyLoggerReader)
-        assert isinstance(reader, ArchiveReader)
+        assert isinstance(reader, TraceReader)
         assert len(reader.entries) > 0
 
     def test_init_with_nonexistent_file(self):
@@ -213,11 +213,11 @@ class TestBodyLoggerReader:
         filtered_entries = reader.query(start_time=mid_time)
         assert len(filtered_entries) <= len(reader.entries)
 
-    def test_open_archive_with_bodylogger(self):
-        """Test that open_archive can handle bodylogger files."""
-        reader = open_archive(str(TEST_BODYLOGGER_PATH))
+    def test_open_trace_with_bodylogger(self):
+        """Test that open_trace can handle bodylogger files."""
+        reader = open_trace(str(TEST_BODYLOGGER_PATH))
         assert isinstance(reader, BodyLoggerReader)
-        assert isinstance(reader, ArchiveReader)
+        assert isinstance(reader, TraceReader)
         assert len(reader) > 0
 
     def test_content_type_detection(self):

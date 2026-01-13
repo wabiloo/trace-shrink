@@ -7,12 +7,12 @@ import tempfile
 import zipfile
 from typing import Any, Dict, Iterator, List, Optional
 
-from .archive_reader import ArchiveReader
 from .proxyman_entry import ProxymanLogV2Entry
 from .trace_entry import TraceEntry
+from .trace_reader import TraceReader
 
 
-class ProxymanLogV2Reader(ArchiveReader):
+class ProxymanLogV2Reader(TraceReader):
     """
     Handles reading and indexing Proxyman log files (.proxymanlogv2).
     Ensures lazy loading of entry details.

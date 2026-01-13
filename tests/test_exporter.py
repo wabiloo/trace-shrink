@@ -128,7 +128,7 @@ class TestExporterClassMethods:
 
 
 class TestExporterInstanceMethods:
-    """Tests for Exporter instance methods (with ArchiveReader)."""
+    """Tests for Exporter instance methods (with TraceReader)."""
 
     def test_to_har_instance_method_all_entries(self, har_reader: HarReader):
         """Test exporting all entries using instance method."""

@@ -2,12 +2,12 @@
 import json
 from typing import Any, Dict, Iterator, List, Optional
 
-from .archive_reader import ArchiveReader
 from .har_entry import HarEntry
 from .trace_entry import TraceEntry  # For type hinting
+from .trace_reader import TraceReader
 
 
-class HarReader(ArchiveReader):
+class HarReader(TraceReader):
     """
     Handles reading and indexing HAR (HTTP Archive) files (.har).
     """

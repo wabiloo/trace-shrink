@@ -4,22 +4,22 @@ This guide provides a quick overview of how to use `trace-shrink` to analyze you
 
 ## Opening an Archive
 
-The main entry point to the library is the `open_archive` function. It automatically detects the file type (HAR, Proxyman, or Bodylogger) and returns an appropriate `ArchiveReader` instance.
+The main entry point to the library is the `open_trace` function. It automatically detects the file type (HAR, Proxyman, or Bodylogger) and returns an appropriate `TraceReader` instance.
 
 ```python
-from trace_shrink import open_archive
+from trace_shrink import open_trace
 
 try:
     # Open a HAR file
-    har_archive = open_archive("path/to/your/capture.har")
+    har_trace = open_trace("path/to/your/capture.har")
 
     # Or open a Proxyman log
-    proxyman_archive = open_archive("path/to/your/capture.proxymanlogv2")
+    proxyman_trace = open_trace("path/to/your/capture.proxymanlogv2")
 
     # Or open a Bodylogger file
-    bodylogger_archive = open_archive("path/to/your/capture.log")
+    bodylogger_trace = open_trace("path/to/your/capture.log")
 
-    print(f"Successfully opened archive with {len(har_archive)} entries.")
+    print(f"Successfully opened trace with {len(har_trace)} entries.")
 
 except FileNotFoundError:
     print("Error: The file was not found.")
@@ -32,14 +32,14 @@ except ValueError as e:
 
 ## Iterating and Filtering Entries
 
-Once you have an `ArchiveReader`, you can iterate over its `TraceEntry` objects or use the built-in methods to filter them.
+Once you have a `TraceReader`, you can iterate over its `TraceEntry` objects or use the built-in methods to filter them.
 
 ### Basic Iteration
 
 ```python
-from trace_shrink import open_archive
+from trace_shrink import open_trace
 
-archive = open_archive("path/to/your/capture.har")
+trace = open_trace("path/to/your/capture.har")
 
 for entry in archive:
     print(f"[{entry.index}] {entry.request.method} {entry.request.url} -> {entry.response.status_code}")
@@ -50,9 +50,9 @@ for entry in archive:
 The `filter` method allows you to find specific entries based on criteria like host, URL, or MIME type.
 
 ```python
-from trace_shrink import open_archive
+from trace_shrink import open_trace
 
-archive = open_archive("path/to/your/capture.har")
+trace = open_trace("path/to/your/capture.har")
 
 # Find all entries for a specific host
 api_calls = archive.filter(host="api.example.com")
@@ -73,9 +73,9 @@ for manifest in hls_manifests:
 You can automatically detect all ABR manifest URLs within a capture using the `get_abr_manifest_urls` method. This is more reliable than filtering by MIME type alone as it also inspects URLs.
 
 ```python
-from trace_shrink import open_archive
+from trace_shrink import open_trace
 
-archive = open_archive("path/to/your/capture.har")
+trace = open_trace("path/to/your/capture.har")
 
 # Get all ABR manifest URLs (HLS & DASH)
 manifest_urls = archive.get_abr_manifest_urls()
@@ -95,9 +95,9 @@ print(f"\\nFound {len(hls_urls)} HLS manifest(s).")
 Once you have a manifest URL, you can use `get_manifest_stream` to get a `ManifestStream` object. This object contains all the successive requests made to that single manifest URL, allowing you to analyze how an HLS playlist or DASH manifest changed over time.
 
 ```python
-from trace_shrink import open_archive
+from trace_shrink import open_trace
 
-archive = open_archive("path/to/your/capture.har")
+trace = open_trace("path/to/your/capture.har")
 manifest_urls = archive.get_abr_manifest_urls()
 
 if not manifest_urls:
@@ -125,16 +125,16 @@ else:
 You can export entries to different formats using the `Exporter` class. This is particularly useful for converting bodylogger files to HAR format.
 
 ```python
-from trace_shrink import open_archive, Exporter
+from trace_shrink import open_trace, Exporter
 
 # Open a bodylogger file
-bodylogger_archive = open_archive("path/to/capture.log")
+bodylogger_trace = open_trace("path/to/capture.log")
 
 # Create an exporter and convert to HAR
-exporter = Exporter(bodylogger_archive)
+exporter = Exporter(bodylogger_trace)
 exporter.to_har("output.har")
 
-print(f"Converted {len(bodylogger_archive)} entries to HAR format.")
+print(f"Converted {len(bodylogger_trace)} entries to HAR format.")
 ```
 
 You can also use the provided script:

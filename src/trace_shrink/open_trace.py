@@ -1,17 +1,17 @@
 import os
 
-from .archive_reader import ArchiveReader
 from .bodylogger_reader import BodyLoggerReader
 from .har_reader import HarReader
-from .proxyman_log_reader import ProxymanLogV2Reader
 from .multifile_reader import MultiFileFolderArchive
+from .proxyman_log_reader import ProxymanLogV2Reader
+from .trace_reader import TraceReader
 
 
-def open_archive(path: str) -> ArchiveReader:
+def open_trace(path: str) -> TraceReader:
     """
-    Factory function to open a trace file and return the correct ArchiveReader subclass.
+    Factory function to open a trace file and return the correct TraceReader subclass.
     Supports .har, .proxymanlogv2, and .log (bodylogger) files.
-    
+
     Raises ValueError for unknown/unsupported file formats.
     """
     if os.path.isdir(path):

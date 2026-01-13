@@ -4,10 +4,10 @@ Export functionality for converting between trace archive formats.
 
 from typing import List, Optional
 
-from .archive_reader import ArchiveReader
 from .har_reader import HarReader
 from .proxyman_log_reader import ProxymanLogV2Reader
 from .trace_entry import TraceEntry
+from .trace_reader import TraceReader
 
 
 class _ExportMethod:
@@ -42,8 +42,8 @@ class Exporter:
     The exporter works with any list of TraceEntry objects and converts them
     using the unified TraceEntry interface.
 
-    Can be used as class methods for direct export, or instantiated with an
-    ArchiveReader for convenience when exporting all entries.
+    Can be used as class methods for direct export, or instantiated with a
+    TraceReader for convenience when exporting all entries.
 
     Examples:
         # As class method (entries required)
