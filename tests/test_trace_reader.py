@@ -5,10 +5,15 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 import yarl
 
-from trace_shrink.formats import Format
-from trace_shrink.har_reader import HarReader
-from trace_shrink.trace_entry import RequestDetails, ResponseDetails, TraceEntry
-from trace_shrink.trace_reader import DecoratedUrl, TraceReader
+from trace_shrink import (
+    DecoratedUrl,
+    Format,
+    HarReader,
+    RequestDetails,
+    ResponseDetails,
+    TraceEntry,
+    TraceReader,
+)
 
 
 # Concrete implementation of TraceReader for testing
@@ -557,7 +562,7 @@ class TestTraceReaderGetEntryById:
         assert proxyman_file_path.exists(), (
             f"Proxyman file not found at {proxyman_file_path}"
         )
-        from trace_shrink.proxyman_log_reader import ProxymanLogV2Reader
+        from trace_shrink import ProxymanLogV2Reader
 
         return ProxymanLogV2Reader(str(proxyman_file_path))
 
@@ -754,7 +759,7 @@ class TestTraceReaderGetEntriesByIds:
         assert proxyman_file_path.exists(), (
             f"Proxyman file not found at {proxyman_file_path}"
         )
-        from trace_shrink.proxyman_log_reader import ProxymanLogV2Reader
+        from trace_shrink import ProxymanLogV2Reader
 
         return ProxymanLogV2Reader(str(proxyman_file_path))
 

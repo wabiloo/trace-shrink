@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from yarl import URL
 
-from .highlight import HIGHLIGHT_COLOR_MAP
-from .http_utils import get_status_text
+from ..utils.highlight import HIGHLIGHT_COLOR_MAP
+from ..utils.http_utils import get_status_text
 from .trace_entry import (
     RequestDetails,
     ResponseBodyDetails,

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from trace_shrink import BodyLoggerReader, BodyLoggerEntry, open_trace
-from trace_shrink.trace_reader import TraceReader
+from trace_shrink import TraceReader
 
 
 # Path to test bodylogger file

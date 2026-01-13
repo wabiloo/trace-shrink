@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from yarl import URL
 
-from .http_utils import get_status_text
+from ..utils.http_utils import get_status_text
 from .trace_entry import (
     RequestDetails,
     ResponseBodyDetails,

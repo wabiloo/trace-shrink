@@ -4,10 +4,10 @@ from typing import Dict, List, Optional, Pattern
 
 import yarl
 
-from .formats import Format
-from .manifest_stream import ManifestStream
-from .trace import DecoratedUrl, Trace
-from .trace_entry import TraceEntry
+from ..utils.formats import Format
+from ..manifest_stream import ManifestStream
+from ..trace import DecoratedUrl, Trace
+from ..entries.trace_entry import TraceEntry
 
 
 class TraceReader(ABC):

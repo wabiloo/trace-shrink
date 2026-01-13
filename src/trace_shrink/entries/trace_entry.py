@@ -3,8 +3,8 @@ from typing import Dict, Optional
 
 import yarl
 
-from trace_shrink.formats import MimeType
-from trace_shrink.highlight import validate_highlight
+from ..utils.formats import MimeType
+from ..utils.highlight import validate_highlight
 
 
 class RequestDetails:

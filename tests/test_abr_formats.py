@@ -1,7 +1,7 @@
 import pytest
 import yarl
 
-from trace_shrink.formats import Format, MimeType
+from trace_shrink import Format, MimeType
 
 
 @pytest.mark.parametrize(

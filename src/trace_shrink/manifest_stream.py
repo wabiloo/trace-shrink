@@ -4,8 +4,8 @@ import bisect
 from datetime import datetime, timedelta, timezone
 from typing import List, Literal, Optional
 
-from .formats import Format
-from .trace_entry import TraceEntry
+from .utils.formats import Format
+from .entries.trace_entry import TraceEntry
 
 
 class ManifestStream:

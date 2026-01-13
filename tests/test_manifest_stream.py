@@ -3,8 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import yarl
 
-from trace_shrink.formats import Format
-from trace_shrink.manifest_stream import ManifestStream
+from trace_shrink import Format, ManifestStream
 
 
 # Minimal test classes to simulate TraceEntry and sub-objects

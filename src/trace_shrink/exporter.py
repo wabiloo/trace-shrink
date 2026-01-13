@@ -4,11 +4,11 @@ Export functionality for converting between trace archive formats.
 
 from typing import List, Optional, Union
 
-from .har_writer import HarWriter
-from .proxyman_writer import ProxymanWriter
+from .writers.har_writer import HarWriter
+from .writers.proxyman_writer import ProxymanWriter
 from .trace import Trace
-from .trace_entry import TraceEntry
-from .trace_reader import TraceReader
+from .entries.trace_entry import TraceEntry
+from .readers.trace_reader import TraceReader
 
 
 class _ExportMethod:

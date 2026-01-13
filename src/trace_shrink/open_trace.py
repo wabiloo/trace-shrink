@@ -1,10 +1,10 @@
 import os
 
-from .bodylogger_reader import BodyLoggerReader
-from .har_reader import HarReader
-from .multifile_reader import MultiFileFolderArchive
-from .proxyman_log_reader import ProxymanLogV2Reader
-from .trace_reader import TraceReader
+from .readers.bodylogger_reader import BodyLoggerReader
+from .readers.har_reader import HarReader
+from .readers.multifile_reader import MultiFileFolderArchive
+from .readers.proxyman_log_reader import ProxymanLogV2Reader
+from .readers.trace_reader import TraceReader
 
 
 def open_trace(path: str) -> TraceReader:

@@ -5,9 +5,9 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Pattern, Seque
 
 import yarl
 
-from .formats import Format
+from .utils.formats import Format
 from .manifest_stream import ManifestStream
-from .trace_entry import TraceEntry
+from .entries.trace_entry import TraceEntry
 
 
 class Trace:

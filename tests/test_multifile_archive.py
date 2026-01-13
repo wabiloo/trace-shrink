@@ -2,7 +2,7 @@ import os
 import json
 import tempfile
 
-from trace_shrink.multifile_reader import MultiFileFolderArchive
+from trace_shrink import MultiFileFolderArchive
 
 
 def make_sample(folder, index=1, body=b"hello world", annotations=None):

@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from .bodylogger_entry import BodyLoggerEntry, parse_bodylogger_entry
+from ..entries.bodylogger_entry import BodyLoggerEntry, parse_bodylogger_entry
 from .trace_reader import TraceReader
 
 

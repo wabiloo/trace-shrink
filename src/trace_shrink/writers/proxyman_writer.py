@@ -8,8 +8,8 @@ import tempfile
 import zipfile
 from typing import List
 
-from .proxyman_entry import ProxymanLogV2Entry
-from .trace_entry import TraceEntry
+from ..entries.proxyman_entry import ProxymanLogV2Entry
+from ..entries.trace_entry import TraceEntry
 
 
 class ProxymanWriter:

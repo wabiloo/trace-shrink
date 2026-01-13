@@ -5,9 +5,9 @@ HAR writer for exporting TraceEntry objects to HAR format.
 import json
 from typing import Any, Dict, List
 
-from .har_entry import HarEntry
-from .trace_entry import TraceEntry
-from .version import get_package_version
+from ..entries.har_entry import HarEntry
+from ..entries.trace_entry import TraceEntry
+from ..version import get_package_version
 
 
 class HarWriter:

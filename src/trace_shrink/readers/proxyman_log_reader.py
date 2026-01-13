@@ -5,8 +5,8 @@ import re
 import zipfile
 from typing import Any, Dict, Iterator, List, Optional
 
-from .proxyman_entry import ProxymanLogV2Entry
-from .trace_entry import TraceEntry
+from ..entries.proxyman_entry import ProxymanLogV2Entry
+from ..entries.trace_entry import TraceEntry
 from .trace_reader import TraceReader
 
 

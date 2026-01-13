@@ -2,7 +2,7 @@
 import json
 from typing import Any, Dict, Optional
 
-from .har_entry import HarEntry
+from ..entries.har_entry import HarEntry
 from .trace_reader import TraceReader
 
 

@@ -5,7 +5,7 @@ import re
 from collections.abc import Iterator
 from typing import List
 
-from .multifile_entry import MultiFileTraceEntry
+from ..entries.multifile_entry import MultiFileTraceEntry
 from .trace_reader import TraceReader
 
 
