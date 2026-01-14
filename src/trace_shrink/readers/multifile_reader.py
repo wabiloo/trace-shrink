@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import re
+from pathlib import Path
 from typing import List
 
 from ..entries.multifile_entry import MultiFileTraceEntry
@@ -29,10 +29,11 @@ class MultiFileFolderReader(TraceReader):
         return self._trace
 
     def _scan_folder(self) -> List[MultiFileTraceEntry]:
-        if not os.path.isdir(self.folder_path):
+        folder_path = Path(self.folder_path)
+        if not folder_path.is_dir():
             return []
 
-        files = os.listdir(self.folder_path)
+        files = [f.name for f in folder_path.iterdir() if f.is_file()]
         metas = []
         for f in files:
             m = self.META_RE.search(f)
@@ -43,13 +44,13 @@ class MultiFileFolderReader(TraceReader):
         metas.sort()
         entries: List[MultiFileTraceEntry] = []
         for idx, meta_fn in metas:
-            meta_path = os.path.join(self.folder_path, meta_fn)
+            meta_path = folder_path / meta_fn
             # possible body files: request_{idx}.body* (any extension)
             body_path = None
             prefix = f"request_{idx}.body"
             for f in files:
                 if f.startswith(prefix):
-                    body_path = os.path.join(self.folder_path, f)
+                    body_path = folder_path / f
                     break
 
             # annotations: request_{idx}.*.txt (e.g., request_1.digest.txt)
@@ -58,10 +59,10 @@ class MultiFileFolderReader(TraceReader):
             for f in files:
                 if f.startswith(ann_prefix) and f.endswith(".txt") and f != meta_fn:
                     # Skip the meta.json file, only include .txt annotation files
-                    ann_paths.append(os.path.join(self.folder_path, f))
+                    ann_paths.append(str(folder_path / f))
 
             entry = MultiFileTraceEntry.from_files(
-                idx, meta_path, body_path or "", ann_paths
+                idx, str(meta_path), str(body_path) if body_path else "", ann_paths
             )
             entries.append(entry)
 

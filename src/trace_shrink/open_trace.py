@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Union
 
@@ -22,17 +21,14 @@ def detect_format(path: Union[str, Path]) -> str:
     Raises:
         ValueError: If the format cannot be determined from the path
     """
-    path_str = str(path)
+    path_obj = Path(path)
 
     # Check if it's a directory (multifile archive)
-    if os.path.isdir(path_str):
+    if path_obj.is_dir():
         return "multifile"
 
     # Otherwise, detect from file extension
-    if isinstance(path, Path):
-        ext = path.suffix.lower()
-    else:
-        ext = os.path.splitext(path_str)[1].lower()
+    ext = path_obj.suffix.lower()
 
     if ext == ".har":
         return "har"

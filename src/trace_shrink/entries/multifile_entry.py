@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from yarl import URL
@@ -161,8 +161,9 @@ class MultiFileTraceEntry(TraceEntry):
         if annotations_paths:
             for p in annotations_paths:
                 try:
-                    with open(p, "r") as af:
-                        basename = os.path.basename(p)
+                    ann_path = Path(p)
+                    with ann_path.open("r") as af:
+                        basename = ann_path.name
                         # Remove request_{index}. prefix and .txt suffix
                         # e.g., request_1.digest.txt -> digest
                         prefix = f"request_{index}."

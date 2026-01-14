@@ -2,10 +2,11 @@
 Proxyman writer for exporting TraceEntry objects to Proxyman log v2 format.
 """
 
-import json
 import os
+import json
 import tempfile
 import zipfile
+from pathlib import Path
 from typing import List
 
 from ..entries.proxyman_entry import ProxymanLogV2Entry
@@ -33,10 +34,13 @@ class ProxymanWriter:
         ]
 
         # Create a temporary file for the ZIP archive
+        output_path_obj = Path(output_path)
+        tmp_dir = output_path_obj.parent if output_path_obj.parent != Path(".") else Path(".")
         tmp_fd, tmp_path = tempfile.mkstemp(
-            suffix=".proxymanlogv2", dir=os.path.dirname(output_path) or "."
+            suffix=".proxymanlogv2", dir=str(tmp_dir)
         )
         os.close(tmp_fd)
+        tmp_path_obj = Path(tmp_path)
 
         try:
             with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zip_ref:
@@ -47,12 +51,12 @@ class ProxymanWriter:
                     )
 
             # Move the temporary file to the final location
-            os.replace(tmp_path, output_path)
+            tmp_path_obj.replace(output_path_obj)
         except Exception as e:
             # Clean up temporary file on error
-            if os.path.exists(tmp_path):
+            if tmp_path_obj.exists():
                 try:
-                    os.remove(tmp_path)
+                    tmp_path_obj.unlink()
                 except Exception:
                     pass
             raise IOError(

@@ -1,8 +1,8 @@
 """
 Utility functions for retrieving package version information.
 """
-import os
 from importlib.metadata import version as get_package_version
+from pathlib import Path
 
 
 def get_package_version() -> str:
@@ -17,11 +17,8 @@ def get_package_version() -> str:
     except Exception:
         # Fallback: try to read from pyproject.toml manually
         try:
-            pyproject_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                "pyproject.toml",
-            )
-            with open(pyproject_path, "r", encoding="utf-8") as f:
+            pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+            with pyproject_path.open("r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line.startswith("version") and "=" in line:

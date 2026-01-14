@@ -1,9 +1,9 @@
 import functools
 import json
-import os
 import re
 import zipfile
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..entries.proxyman_entry import ProxymanLogV2Entry
@@ -33,7 +33,8 @@ class ProxymanLogV2Reader(TraceReader):
         """
         super().__init__()
         self.log_file_path = log_file_path
-        if not os.path.exists(self.log_file_path):
+        log_path = Path(self.log_file_path)
+        if not log_path.exists():
             raise FileNotFoundError(f"Log file not found: {self.log_file_path}")
         if not zipfile.is_zipfile(self.log_file_path):
             raise ValueError(
