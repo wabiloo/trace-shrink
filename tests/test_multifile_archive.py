@@ -10,7 +10,6 @@ def make_sample(folder, index=1, body=b"hello world", annotations=None):
         "timestamp": "2026-01-11T10:00:00Z",
         "request": {"url": "http://example.com/", "headers": {"User-Agent": "py"}},
         "response": {"status_code": 200, "headers": {"Content-Type": "text/plain"}},
-        "facets": {},
         "elapsed_ms": 123,
     }
     meta_path = os.path.join(folder, f"request_{index}.meta.json")
@@ -78,7 +77,6 @@ def test_multifile_archive_content_type_from_headers():
                 "status_code": 200,
                 "headers": {"Content-Type": "application/dash+xml; charset=utf-8"},
             },
-            "facets": {},
             "elapsed_ms": 123,
         }
         meta_path1 = os.path.join(td, "request_1.meta.json")
@@ -93,7 +91,6 @@ def test_multifile_archive_content_type_from_headers():
             "timestamp": "2026-01-11T10:00:01Z",
             "request": {"url": "http://example.com/test", "headers": {}},
             "response": {"status_code": 200, "headers": {}},
-            "facets": {},
             "elapsed_ms": 124,
         }
         meta_path2 = os.path.join(td, "request_2.meta.json")

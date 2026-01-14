@@ -1,32 +1,55 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, Optional
 
-from requests import Response
+from ..entries.requests_entry import RequestsResponseTraceEntry
+from ..entries.trace_entry import TraceEntry
 
 
-def response_to_exchange(
-    response: Response, facets: Dict[str, str] | None = None
-) -> Dict:
-    facets = facets or {}
+def entry_to_exchange(entry: TraceEntry) -> Dict:
+    """Convert a TraceEntry to an exchange dictionary for multifile format.
+
+    Args:
+        entry: The TraceEntry to convert
+
+    Returns:
+        Dictionary representing the exchange in multifile format
+    """
+    # Get timestamp from timeline if available, otherwise use current time
+    timestamp = datetime.now(timezone.utc)
+    if entry.timeline.response_end:
+        timestamp = entry.timeline.response_end
+    elif entry.timeline.request_start:
+        timestamp = entry.timeline.request_start
+
+    # Get elapsed time
+    elapsed_ms = 0
+    if entry.timeline.request_start and entry.timeline.response_end:
+        delta = entry.timeline.response_end - entry.timeline.request_start
+        elapsed_ms = int(delta.total_seconds() * 1000)
+    elif isinstance(entry, RequestsResponseTraceEntry):
+        elapsed_ms = entry.elapsed_ms
+
+    # Get reason phrase if available (from RequestsResponseTraceEntry)
+    reason = None
+    if isinstance(entry, RequestsResponseTraceEntry):
+        reason = entry.reason
+
     exchange = {
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "timestamp": timestamp.isoformat().replace("+00:00", "Z"),
         "request": {
-            "url": str(response.request.url),
-            "headers": dict(response.request.headers),
+            "url": str(entry.request.url),
+            "headers": entry.request.headers,
         },
         "response": {
-            "status_code": response.status_code,
-            "reason": response.reason,
-            "headers": dict(response.headers),
+            "status_code": entry.response.status_code,
+            "reason": reason,
+            "headers": entry.response.headers,
         },
-        "facets": facets,
-        "elapsed_ms": int(response.elapsed.total_seconds() * 1000)
-        if hasattr(response, "elapsed")
-        else 0,
+        "elapsed_ms": elapsed_ms,
     }
     return exchange
 
@@ -34,13 +57,11 @@ def response_to_exchange(
 def write_multifile_entry(
     folder: str,
     index: int,
-    response: Response,
+    entry: TraceEntry,
     body_bytes: Optional[bytes] = None,
-    annotations: Optional[Dict[str, str]] = None,
-    facets: Optional[Dict[str, str]] = None,
     body_extension: Optional[str] = None,
 ) -> None:
-    """Write meta, body and annotation files for a response into `folder` using index.
+    """Write meta, body and annotation files for a TraceEntry into `folder` using index.
 
     Files written:
     - request_{index}.meta.json
@@ -50,40 +71,37 @@ def write_multifile_entry(
     Args:
         folder: Directory to write files to
         index: Request index number
-        response: HTTP response object
-        body_bytes: Optional body content as bytes
-        annotations: Optional dictionary of annotations to write as .txt files
-        facets: Optional dictionary of facets to include in metadata
+        entry: TraceEntry object containing request/response data
+        body_bytes: Optional body content as bytes (if not provided, extracted from entry)
         body_extension: Optional extension to append after .body (e.g., ".m3u8", ".mpd")
     """
-    os.makedirs(folder, exist_ok=True)
+    folder_path = Path(folder)
+    folder_path.mkdir(parents=True, exist_ok=True)
     basename = f"request_{index}"
-    exchange = response_to_exchange(response, facets=facets)
+    exchange = entry_to_exchange(entry)
 
-    meta_path = os.path.join(folder, f"{basename}.meta.json")
-    with open(meta_path, "w", encoding="utf-8") as mf:
+    meta_path = folder_path / f"{basename}.meta.json"
+    with meta_path.open("w", encoding="utf-8") as mf:
         json.dump(exchange, mf, indent=2)
 
     # Body
+    # TODO: determine if from the entry (content-type) if not provided
     body_extension = body_extension or ""
-    body_path = os.path.join(folder, f"{basename}.body{body_extension}")
+    body_path = folder_path / f"{basename}.body{body_extension}"
     if body_bytes is None:
-        try:
-            # prefer raw bytes if available
-            body_bytes = response.content
-        except Exception:
-            body_bytes = None
+        # Extract body bytes from entry
+        body = entry.response.body
+        body_bytes = body._get_decoded_body()
 
     if body_bytes is not None:
-        with open(body_path, "wb") as bf:
+        with body_path.open("wb") as bf:
             bf.write(body_bytes)
 
-    # Annotations
-    annotations = annotations or {}
-    for name, text in annotations.items():
-        ann_path = os.path.join(folder, f"{basename}.{name}.txt")
+    # Annotations - write all annotations from entry
+    for name, text in entry.annotations.items():
+        ann_path = folder_path / f"{basename}.{name}.txt"
         try:
-            with open(ann_path, "w", encoding="utf-8") as af:
+            with ann_path.open("w", encoding="utf-8") as af:
                 af.write(text)
         except Exception:
             pass

@@ -6,6 +6,7 @@ from .entries.bodylogger_entry import BodyLoggerEntry
 from .entries.har_entry import HarEntry
 from .entries.multifile_entry import MultiFileTraceEntry
 from .entries.proxyman_entry import ProxymanLogV2Entry
+from .entries.requests_entry import RequestsResponseTraceEntry
 from .entries.trace_entry import (
     RequestDetails,
     ResponseBodyDetails,
@@ -32,6 +33,7 @@ __all__ = [
     "ResponseDetails",
     "ResponseBodyDetails",
     "TimelineDetails",
+    "RequestsResponseTraceEntry",
     "BodyLoggerReader",  # Advanced use cases - prefer open_trace() for most users
     "BodyLoggerEntry",
     "ProxymanLogV2Reader",  # Advanced use cases - prefer open_trace() for most users
