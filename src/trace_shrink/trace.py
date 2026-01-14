@@ -93,6 +93,8 @@ class Trace:
                 self._id_index.setdefault(entry.id, entry)
         return self._id_index
 
+    # === Getters for various entry queries
+    
     def get_entry_by_id(self, entry_id: str) -> Optional[TraceEntry]:
         return self._build_id_index().get(entry_id)
 
@@ -131,6 +133,40 @@ class Trace:
 
         selected_ids = set(entry_ids)
         return [entry for entry in self._entries if entry.id in selected_ids]
+
+    def get_entries_by_host(self, host: Optional[str]) -> List[TraceEntry]:
+        """
+        Retrieves all entries that match the specified host.
+        Host matching is case-insensitive.
+
+        Args:
+            host: The host string to match. Case-insensitive.
+                  Pass None to match entries with no host.
+
+        Returns:
+            List of TraceEntry objects matching the host, in order of appearance.
+        """
+        matching_entries: List[TraceEntry] = []
+
+        if host is None:
+            for entry in self._entries:
+                try:
+                    entry_host = yarl.URL(str(entry.request.url)).host
+                    if entry_host is None:
+                        matching_entries.append(entry)
+                except (AttributeError, TypeError, ValueError):
+                    pass
+        else:
+            host_lower = host.lower()
+            for entry in self._entries:
+                try:
+                    entry_host = yarl.URL(str(entry.request.url)).host
+                    if entry_host and entry_host.lower() == host_lower:
+                        matching_entries.append(entry)
+                except (AttributeError, TypeError, ValueError):
+                    pass
+
+        return matching_entries
 
     def get_entries_for_partial_url(
         self, url_pattern: Union[str, Pattern[str]]
@@ -190,6 +226,8 @@ class Trace:
             filtered_entries.append(entry)
         return filtered_entries
 
+    # === ABR manifest related methods ===
+
     def get_manifest_stream(self, manifest_url: Union[str, yarl.URL]) -> ManifestStream:
         entries = self.get_entries_for_url(manifest_url)
         if not entries:
@@ -213,7 +251,7 @@ class Trace:
             format_filter = Format(format_filter)
         urls: List[DecoratedUrl] = []
         ignored_params = self.abr_detector.get_ignored_query_params()
-        
+
         for entry in self._entries:
             abr_format = Format.from_url_or_mime_type(
                 entry.response.mime_type, entry.request.url
@@ -224,7 +262,10 @@ class Trace:
                 continue
 
             # Skip entries with ignored query parameters
-            if any(entry.request.url.query.get(param) is not None for param in ignored_params):
+            if any(
+                entry.request.url.query.get(param) is not None
+                for param in ignored_params
+            ):
                 continue
 
             urls.append(DecoratedUrl(entry.request.url, abr_format.value))

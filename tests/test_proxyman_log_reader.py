@@ -201,23 +201,6 @@ def test_list_entries_sorted(dummy_log_file):
     ]
 
 
-def test_list_entries_by_host_sorting_and_filtering(dummy_log_file):
-    reader = ProxymanLogV2Reader(dummy_log_file)
-    example_entries = reader.list_entries_by_host("example.com")
-    assert example_entries == ["request_0_file-id-123", "request_2_file-id-789"]
-    example_entries_upper = reader.list_entries_by_host("EXAMPLE.COM")
-    assert example_entries_upper == ["request_0_file-id-123", "request_2_file-id-789"]
-    another_entries = reader.list_entries_by_host("another.org")
-    assert another_entries == ["request_1_file-id-456"]
-    no_match_entries = reader.list_entries_by_host("nonexistent.com")
-    assert no_match_entries == []
-    null_host_entries = reader.list_entries_by_host(None)
-    assert null_host_entries == [
-        "request_3_missing-keys-id",
-        "request_4_null-host-id",
-        "request_99_malformed-json-id",
-    ]
-
 
 # --- Test Entry Object Retrieval and Properties ---
 
@@ -267,36 +250,6 @@ def test_get_entry_missing_keys_in_content(dummy_log_file):
 
 
 # --- Test Iterating and Retrieving Multiple Entries ---
-
-
-def test_get_entries_by_host_yielding_objects(dummy_log_file):
-    reader = ProxymanLogV2Reader(dummy_log_file)
-
-    example_host_iter = reader.get_entries_by_host("example.com")
-    example_entries = list(example_host_iter)
-
-    assert len(example_entries) == 2
-    assert isinstance(example_entries[0], ProxymanLogV2Entry)
-    assert isinstance(example_entries[1], ProxymanLogV2Entry)
-    entry_ids = sorted([e.id for e in example_entries])
-    assert entry_ids == sorted(["123", "789"])
-    assert example_entries[0].id == "123"
-    assert str(example_entries[0].request.url) == "http://example.com/path1"
-    assert example_entries[1].id == "789"
-    assert str(example_entries[1].request.url) == "http://example.com/other"
-
-    no_match_iter = reader.get_entries_by_host("nonexistent.com")
-    assert list(no_match_iter) == []
-
-    null_host_iter = reader.get_entries_by_host(None)
-    null_host_entries = list(null_host_iter)
-    # Corrected expectation: only 2 entries are successfully loaded and yielded
-    # because request_99_malformed-json-id will not be parsed by get_entry()
-    assert len(null_host_entries) == 2
-    null_host_ids = sorted([e.id for e in null_host_entries])
-    # This expectation remains correct as it only includes the successfully loaded ones
-    expected_null_ids = sorted(["json-id-missing-keys", "json-id-null-host"])
-    assert null_host_ids == expected_null_ids
 
 
 # --- Test Dunder Methods __len__ and __iter__ ---
