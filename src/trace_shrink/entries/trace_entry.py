@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 import yarl
 
-from ..utils.formats import MimeType
+from ..utils.formats import Format, MimeType
 from ..utils.highlight import validate_highlight
 
 
@@ -352,11 +352,41 @@ class TraceEntry:
         # Fall back to reading from response body
         body = self.response.body
 
-        if MimeType(self.response.content_type).has_text_content():
-            return body.text or ""
+        # Check if content_type indicates text content
+        content_type = self.response.content_type
+        if content_type:
+            try:
+                if MimeType(content_type).has_text_content():
+                    return body.text or ""
+            except ValueError:
+                # Invalid mime type, treat as binary
+                pass
+
+        # Default to binary/bytes
+        decoded = body._get_decoded_body()
+        return decoded if decoded is not None else b""
+
+    @property
+    def content_bytes(self) -> bytes:
+        """The content of the entry as bytes, converting strings if necessary."""
+        content = self.content
+        if isinstance(content, bytes):
+            return content
+        elif isinstance(content, str):
+            return content.encode("utf-8")
         else:
-            decoded = body._get_decoded_body()
-            return decoded if decoded is not None else b""
+            return b""
+
+    @property
+    def format(self) -> Optional[Format]:
+        """The format of the entry (HLS, DASH, or None), determined from content type or URL."""
+        mime_type = self.response.content_type or self.response.mime_type
+        if mime_type:
+            try:
+                return Format.from_url_or_mime_type(mime_type, self.request.url)
+            except ValueError:
+                pass
+        return Format.from_url(self.request.url)
 
     def __str__(self) -> str:
         """String representation of the entry."""

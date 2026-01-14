@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 from yarl import URL
 
-from trace_shrink import MultifileWriter, RequestsResponseTraceEntry
+from trace_shrink import Format, MultifileWriter, RequestsResponseTraceEntry
 
 
 def _fake_response(
@@ -204,3 +204,89 @@ def test_multifile_writer_extension_prefers_content_type():
         # Extension should come from content-type (.m3u8), not URL (.mpd)
         assert os.path.exists(f"{td}/request_000001.body.m3u8")
         assert not os.path.exists(f"{td}/request_000001.body.mpd")
+
+
+def test_trace_entry_format_property():
+    """Test the format property on TraceEntry."""
+    # Test HLS format from content-type
+    response = _fake_response(
+        url="https://example.com/manifest.m3u8",
+        headers={"Content-Type": "application/x-mpegURL"},
+    )
+    entry = RequestsResponseTraceEntry(response)
+    assert entry.format == Format.HLS
+
+    # Test DASH format from content-type
+    response = _fake_response(
+        url="https://example.com/manifest.mpd",
+        headers={"Content-Type": "application/dash+xml"},
+    )
+    entry = RequestsResponseTraceEntry(response)
+    assert entry.format == Format.DASH
+
+    # Test format detection from URL when content-type is missing
+    req = SimpleNamespace(
+        url="https://example.com/manifest.m3u8",
+        headers={"User-Agent": "pytest"},
+        method="GET",
+        body=None,
+    )
+    body_bytes = b"#EXTM3U"
+    response = SimpleNamespace(
+        text="#EXTM3U",
+        content=body_bytes,
+        request=req,
+        headers={},  # No Content-Type
+        status_code=200,
+        reason="OK",
+        elapsed=timedelta(milliseconds=5),
+    )
+    entry = RequestsResponseTraceEntry(response)
+    assert entry.format == Format.HLS
+
+    # Test None format for non-ABR content
+    response = _fake_response(
+        url="https://example.com/data.json",
+        headers={"Content-Type": "application/json"},
+    )
+    entry = RequestsResponseTraceEntry(response)
+    assert entry.format is None
+
+
+def test_trace_entry_content_bytes_property():
+    """Test the content_bytes property on TraceEntry."""
+    # Test with text content (HLS)
+    body_text = "#EXTM3U\n#EXT-X-VERSION:3\n"
+    response = _fake_response(body=body_text)
+    entry = RequestsResponseTraceEntry(response)
+    
+    # content_bytes should always return bytes
+    content_bytes = entry.content_bytes
+    assert isinstance(content_bytes, bytes)
+    assert content_bytes == body_text.encode("utf-8")
+    
+    # Test with binary content
+    req = SimpleNamespace(
+        url="https://example.com/video.ts",
+        headers={"User-Agent": "pytest"},
+        method="GET",
+        body=None,
+    )
+    body_bytes = b"\x00\x01\x02\x03"
+    response = SimpleNamespace(
+        text=None,
+        content=body_bytes,
+        request=req,
+        headers={"Content-Type": "video/mp2t"},
+        status_code=200,
+        reason="OK",
+        elapsed=timedelta(milliseconds=5),
+    )
+    entry = RequestsResponseTraceEntry(response)
+    assert isinstance(entry.content_bytes, bytes)
+    assert entry.content_bytes == body_bytes
+    
+    # Test with empty content
+    response = _fake_response(body="")
+    entry = RequestsResponseTraceEntry(response)
+    assert entry.content_bytes == b""
