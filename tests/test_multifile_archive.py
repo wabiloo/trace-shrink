@@ -2,7 +2,7 @@ import os
 import json
 import tempfile
 
-from trace_shrink import MultiFileFolderArchive
+from trace_shrink import MultiFileFolderReader
 
 
 def make_sample(folder, index=1, body=b"hello world", annotations=None):
@@ -33,9 +33,9 @@ def test_multifile_archive_reads_entries():
         make_sample(td, index=1, body=b"abc", annotations={"digest": "d1"})
         make_sample(td, index=2, body=b"def")
 
-        arch = MultiFileFolderArchive(td)
-        assert len(arch) == 2
-        entries = list(arch)
+        arch = MultiFileFolderReader(td)
+        assert len(arch.trace) == 2
+        entries = list(arch.trace)
         assert entries[0].index == 1
         assert entries[1].index == 2
         assert entries[0].response.status_code == 200

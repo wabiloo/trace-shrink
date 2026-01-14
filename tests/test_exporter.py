@@ -12,6 +12,7 @@ from trace_shrink import (
     Exporter,
     HarReader,
     ProxymanLogV2Reader,
+    Trace,
 )
 
 
@@ -50,7 +51,7 @@ class TestExporterClassMethods:
 
     def test_to_har_class_method(self, har_reader: HarReader):
         """Test exporting entries to HAR using class method."""
-        entries = har_reader.entries[:3]  # Get first 3 entries
+        entries = har_reader.trace.entries[:3]  # Get first 3 entries
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
             output_path = f.name
@@ -80,7 +81,7 @@ class TestExporterClassMethods:
 
     def test_to_proxyman_class_method(self, har_reader: HarReader):
         """Test exporting entries to Proxyman using class method."""
-        entries = har_reader.entries[:2]  # Get first 2 entries
+        entries = har_reader.trace.entries[:2]  # Get first 2 entries
 
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".proxymanlogv2", delete=False
@@ -128,11 +129,11 @@ class TestExporterClassMethods:
 
 
 class TestExporterInstanceMethods:
-    """Tests for Exporter instance methods (with TraceReader)."""
+    """Tests for Exporter instance methods (with Trace)."""
 
     def test_to_har_instance_method_all_entries(self, har_reader: HarReader):
         """Test exporting all entries using instance method."""
-        exporter = Exporter(har_reader)
+        exporter = Exporter(har_reader.trace)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
             output_path = f.name
@@ -144,15 +145,15 @@ class TestExporterInstanceMethods:
             with open(output_path, "r") as f:
                 har_data = json.load(f)
 
-            assert len(har_data["log"]["entries"]) == len(har_reader.entries)
+            assert len(har_data["log"]["entries"]) == len(har_reader.trace.entries)
 
         finally:
             Path(output_path).unlink()
 
     def test_to_har_instance_method_filtered_entries(self, har_reader: HarReader):
         """Test exporting filtered entries using instance method."""
-        exporter = Exporter(har_reader)
-        filtered_entries = har_reader.entries[:2]  # First 2 entries
+        exporter = Exporter(har_reader.trace)
+        filtered_entries = har_reader.trace.entries[:2]  # First 2 entries
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
             output_path = f.name
@@ -173,7 +174,7 @@ class TestExporterInstanceMethods:
         self, proxyman_reader: ProxymanLogV2Reader
     ):
         """Test exporting all entries to Proxyman using instance method."""
-        exporter = Exporter(proxyman_reader)
+        exporter = Exporter(proxyman_reader.trace)
 
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".proxymanlogv2", delete=False
@@ -187,7 +188,7 @@ class TestExporterInstanceMethods:
             import zipfile
 
             with zipfile.ZipFile(output_path, "r") as zip_ref:
-                assert len(zip_ref.namelist()) == len(proxyman_reader.entries)
+                assert len(zip_ref.namelist()) == len(proxyman_reader.trace.entries)
 
         finally:
             Path(output_path).unlink()
@@ -198,7 +199,7 @@ class TestCrossFormatConversion:
 
     def test_har_to_proxyman_conversion(self, har_reader: HarReader):
         """Test converting HAR entries to Proxyman format."""
-        entries = har_reader.entries[:3]
+        entries = har_reader.trace.entries[:3]
 
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".proxymanlogv2", delete=False
@@ -210,11 +211,11 @@ class TestCrossFormatConversion:
 
             # Verify conversion by reading back
             reader = ProxymanLogV2Reader(output_path)
-            assert len(reader.entries) == 3
+            assert len(reader.trace.entries) == 3
 
             # Verify data integrity
             for i, original_entry in enumerate(entries):
-                converted_entry = reader.entries[i]
+                converted_entry = reader.trace.entries[i]
                 assert str(converted_entry.request.url) == str(
                     original_entry.request.url
                 )
@@ -229,7 +230,7 @@ class TestCrossFormatConversion:
 
     def test_har_to_proxyman_conversion_with_highlight(self, har_reader: HarReader):
         """Test converting HAR entries with highlight to Proxyman format."""
-        entries = har_reader.entries[:2]
+        entries = har_reader.trace.entries[:2]
 
         # Set highlights on HAR entries
         entries[0].set_highlight("red")
@@ -245,18 +246,18 @@ class TestCrossFormatConversion:
 
             # Verify conversion by reading back
             reader = ProxymanLogV2Reader(output_path)
-            assert len(reader.entries) == 2
+            assert len(reader.trace.entries) == 2
 
             # Verify highlights were converted correctly
-            assert reader.entries[0]._raw_data["style"]["color"] == 0  # red
-            assert reader.entries[1]._raw_data["style"]["textStyle"] == 0  # strike
+            assert reader.trace.entries[0]._raw_data["style"]["color"] == 0  # red
+            assert reader.trace.entries[1]._raw_data["style"]["textStyle"] == 0  # strike
 
         finally:
             Path(output_path).unlink()
 
     def test_proxyman_to_har_conversion(self, proxyman_reader: ProxymanLogV2Reader):
         """Test converting Proxyman entries to HAR format."""
-        entries = proxyman_reader.entries[:3]
+        entries = proxyman_reader.trace.entries[:3]
         num_entries = len(entries)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
@@ -267,11 +268,11 @@ class TestCrossFormatConversion:
 
             # Verify conversion by reading back
             reader = HarReader(output_path)
-            assert len(reader.entries) == num_entries
+            assert len(reader.trace.entries) == num_entries
 
             # Verify data integrity
             for i, original_entry in enumerate(entries):
-                converted_entry = reader.entries[i]
+                converted_entry = reader.trace.entries[i]
                 assert str(converted_entry.request.url) == str(
                     original_entry.request.url
                 )
@@ -286,7 +287,7 @@ class TestCrossFormatConversion:
 
     def test_round_trip_conversion(self, har_reader: HarReader):
         """Test HAR -> Proxyman -> HAR round trip conversion."""
-        original_entries = har_reader.entries[:2]
+        original_entries = har_reader.trace.entries[:2]
 
         with tempfile.TemporaryDirectory() as tmpdir:
             proxyman_path = Path(tmpdir) / "intermediate.proxymanlogv2"
@@ -297,15 +298,15 @@ class TestCrossFormatConversion:
 
             # Proxyman -> HAR
             proxyman_reader = ProxymanLogV2Reader(str(proxyman_path))
-            Exporter.to_har(str(final_har_path), proxyman_reader.entries)
+            Exporter.to_har(str(final_har_path), proxyman_reader.trace.entries)
 
             # Verify final HAR
             final_reader = HarReader(str(final_har_path))
-            assert len(final_reader.entries) == 2
+            assert len(final_reader.trace.entries) == 2
 
             # Verify data integrity
             for i, original_entry in enumerate(original_entries):
-                final_entry = final_reader.entries[i]
+                final_entry = final_reader.trace.entries[i]
                 assert str(final_entry.request.url) == str(original_entry.request.url)
                 assert final_entry.request.method == original_entry.request.method
                 assert (
@@ -319,10 +320,10 @@ class TestExporterWithFiltering:
 
     def test_export_filtered_by_host(self, har_reader: HarReader):
         """Test exporting entries filtered by host."""
-        exporter = Exporter(har_reader)
+        exporter = Exporter(har_reader.trace)
 
         # Filter entries by host
-        filtered_entries = har_reader.filter(host="stream.broadpeak.io")
+        filtered_entries = har_reader.trace.filter(host="stream.broadpeak.io")
 
         if filtered_entries:
             with tempfile.NamedTemporaryFile(
@@ -344,11 +345,11 @@ class TestExporterWithFiltering:
 
     def test_export_filtered_by_ids(self, har_reader: HarReader):
         """Test exporting entries filtered by IDs."""
-        exporter = Exporter(har_reader)
+        exporter = Exporter(har_reader.trace)
 
         # Get entry IDs
-        entry_ids = [entry.id for entry in har_reader.entries[:3]]
-        filtered_entries = har_reader.get_entries_by_ids(entry_ids)
+        entry_ids = [entry.id for entry in har_reader.trace.entries[:3]]
+        filtered_entries = har_reader.trace.get_entries_by_ids(entry_ids)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
             output_path = f.name
@@ -389,7 +390,7 @@ class TestExporterErrorHandling:
 
     def test_export_empty_entries_list(self, har_reader: HarReader):
         """Test exporting an empty list of entries."""
-        exporter = Exporter(har_reader)
+        exporter = Exporter(har_reader.trace)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".har", delete=False) as f:
             output_path = f.name

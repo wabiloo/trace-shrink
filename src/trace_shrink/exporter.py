@@ -2,13 +2,12 @@
 Export functionality for converting between trace archive formats.
 """
 
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from .writers.har_writer import HarWriter
 from .writers.proxyman_writer import ProxymanWriter
 from .trace import Trace
 from .entries.trace_entry import TraceEntry
-from .readers.trace_reader import TraceReader
 
 
 class _ExportMethod:
@@ -44,31 +43,28 @@ class Exporter:
     using the unified TraceEntry interface.
 
     Can be used as class methods for direct export, or instantiated with a
-    TraceReader for convenience when exporting all entries.
+    Trace for convenience when exporting all entries.
 
     Examples:
         # As class method (entries required)
         Exporter.to_har("output.har", entries)
 
-        # As instance method (entries optional, defaults to all reader entries)
-        exporter = Exporter(reader)
+        # As instance method (entries optional, defaults to all trace entries)
+        exporter = Exporter(trace)
         exporter.to_har("output.har")  # Exports all entries
         exporter.to_har("output.har", filtered_entries)  # Exports specific entries
     """
 
-    def __init__(self, source: Union[TraceReader, Trace]):
+    def __init__(self, source: Trace):
         """
-        Initialize the exporter with either a TraceReader or a Trace container.
+        Initialize the exporter with a Trace container.
 
         Args:
-            source: The TraceReader or Trace instance to export from.
+            source: The Trace instance to export from.
         """
-        if isinstance(source, TraceReader):
-            self._trace = source.trace
-        elif isinstance(source, Trace):
-            self._trace = source
-        else:
-            raise TypeError("Exporter source must be a TraceReader or Trace instance.")
+        if not isinstance(source, Trace):
+            raise TypeError("Exporter source must be a Trace instance.")
+        self._trace = source
 
     to_har = _ExportMethod(HarWriter.write)
     to_proxyman = _ExportMethod(ProxymanWriter.write)

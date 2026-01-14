@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Pattern, Sequence, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Pattern,
+    Sequence,
+    Union,
+)
 
 import yarl
 
-from .utils.formats import Format
-from .manifest_stream import ManifestStream
 from .entries.trace_entry import TraceEntry
+from .manifest_stream import ManifestStream
+from .utils.formats import Format
 
 
 class Trace:
@@ -83,6 +93,27 @@ class Trace:
 
     def get_entry_by_id(self, entry_id: str) -> Optional[TraceEntry]:
         return self._build_id_index().get(entry_id)
+
+    def get_next_entry_by_id(
+        self, entry_id: str, direction: int, n: int = 1
+    ) -> Optional[TraceEntry]:
+        """
+        Gets an entry relative to the entry with the given ID within its manifest stream.
+
+        Args:
+            entry_id: The ID of the reference entry
+            direction: Direction to move (positive for forward, negative for backward)
+            n: Number of steps to move (default: 1)
+
+        Returns:
+            The entry at the relative position, or None if not found
+        """
+        entry = self.get_entry_by_id(entry_id)
+        if entry is None:
+            return None
+
+        manifest_stream = self.get_manifest_stream(entry.request.url)
+        return manifest_stream.get_relative_entry(entry, direction, n)
 
     def get_entries_for_url(self, url: Union[str, yarl.URL]) -> List[TraceEntry]:
         return self._build_url_index().get(str(url), [])
@@ -200,4 +231,3 @@ class DecoratedUrl:
         if not isinstance(other, DecoratedUrl):
             return False
         return self.url == other.url and self.format == other.format
-

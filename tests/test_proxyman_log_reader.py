@@ -190,7 +190,7 @@ def test_index_content(dummy_log_file):
 
 def test_list_entries_sorted(dummy_log_file):
     reader = ProxymanLogV2Reader(dummy_log_file)
-    entries = reader.entries
+    entries = reader.trace.entries
     entry_ids = [e.id for e in entries]
     assert entry_ids == [
         "123",
@@ -302,12 +302,12 @@ def test_get_entries_by_host_yielding_objects(dummy_log_file):
 # --- Test Dunder Methods __len__ and __iter__ ---
 def test_len_method(dummy_log_file):
     reader = ProxymanLogV2Reader(dummy_log_file)
-    assert len(reader) == 6  # Total number of indexed entries by filename
+    assert len(reader.trace) == 5  # Total number of successfully loaded entries
 
 
 def test_iter_method(dummy_log_file):
     reader = ProxymanLogV2Reader(dummy_log_file)
-    iterated_entries = list(reader)  # Calls __iter__ then get_entry for each
+    iterated_entries = list(reader.trace)  # Iterates over trace entries
     # Should yield only successfully loaded entries
     # request_99_malformed-json-id will fail get_entry
     assert len(iterated_entries) == 5
@@ -349,7 +349,7 @@ def test_read_real_log_file():
     assert len(index) > 0, "Index should not be empty for the real log file."
     print(f"Real log file indexed {len(index)} entries.")
 
-    entries = reader.entries
+    entries = reader.trace.entries
     assert isinstance(entries, list)
     assert len(entries) > 0
     print(f"First 5 entry filenames found: {entries[:5]}")
@@ -377,7 +377,7 @@ def test_read_real_log_file():
     # Test iteration over a few real entries
     print("\nIterating over first 3 real entries (if available):")
     iter_count = 0
-    for entry in reader:
+    for entry in reader.trace:
         if iter_count < 3:
             assert isinstance(entry, ProxymanLogV2Entry)
             print(
@@ -386,12 +386,12 @@ def test_read_real_log_file():
             iter_count += 1
         else:
             break
-    assert iter_count > 0 if len(reader) > 0 else iter_count == 0
+    assert iter_count > 0 if len(reader.trace) > 0 else iter_count == 0
 
     # Test get_entries_for_url with a common pattern on the real log
     # Example: Find manifest/playlist files (m3u8, mpd)
     print("\nSearching for .m3u8 or .mpd in URLs (real log):")
-    manifest_entries = reader.get_entries_for_url(r"(\.m3u8|\.mpd)")
+    manifest_entries = reader.trace.get_entries_for_partial_url(r"(\.m3u8|\.mpd)")
     print(f"Found {len(manifest_entries)} potential manifest entries.")
     for entry in manifest_entries[:5]:  # Print first 5 found
         print(f"  Manifest entry: {entry.id} - {entry.request.url}")

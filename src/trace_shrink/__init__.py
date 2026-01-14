@@ -18,9 +18,8 @@ from .manifest_stream import ManifestStream
 from .open_trace import open_trace
 from .readers.bodylogger_reader import BodyLoggerReader
 from .readers.har_reader import HarReader
-from .readers.multifile_reader import MultiFileFolderArchive
+from .readers.multifile_reader import MultiFileFolderReader
 from .readers.proxyman_log_reader import ProxymanLogV2Reader
-from .readers.trace_reader import TraceReader
 from .trace import DecoratedUrl, Trace
 from .utils.formats import Format, MimeType
 from .writers.har_writer import HarWriter
@@ -28,18 +27,17 @@ from .writers.multifile_writer import write_multifile_entry
 from .writers.proxyman_writer import ProxymanWriter
 
 __all__ = [
-    "TraceReader",
     "TraceEntry",
     "RequestDetails",
     "ResponseDetails",
     "ResponseBodyDetails",
     "TimelineDetails",
-    "BodyLoggerReader",
+    "BodyLoggerReader",  # Advanced use cases - prefer open_trace() for most users
     "BodyLoggerEntry",
-    "ProxymanLogV2Reader",
+    "ProxymanLogV2Reader",  # Advanced use cases - prefer open_trace() for most users
     "ProxymanLogV2Entry",
     "ProxymanWriter",
-    "HarReader",
+    "HarReader",  # Advanced use cases - prefer open_trace() for most users
     "HarEntry",
     "HarWriter",
     "ManifestStream",
@@ -47,7 +45,7 @@ __all__ = [
     "Exporter",
     "Trace",
     "MultiFileTraceEntry",
-    "MultiFileFolderArchive",
+    "MultiFileFolderReader",  # Advanced use cases - prefer open_trace() for most users
     "Format",
     "MimeType",
     "DecoratedUrl",

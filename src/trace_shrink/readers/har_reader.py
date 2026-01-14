@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, Optional
 
 from ..entries.har_entry import HarEntry
+from ..trace import Trace
 from .trace_reader import TraceReader
 
 
@@ -25,6 +26,7 @@ class HarReader(TraceReader):
         super().__init__()
         self.har_file_path = har_file_path
         self._raw_har_data: Optional[Dict[str, Any]] = None
+        self._entries_loaded = False
 
         try:
             with open(self.har_file_path, "r", encoding="utf-8-sig") as f:
@@ -49,12 +51,9 @@ class HarReader(TraceReader):
             if not isinstance(raw_entries, list):
                 raise ValueError("Invalid HAR format: 'log.entries' is not a list.")
 
-            # --- Structure looks OK, store and process entries ---
+            # --- Structure looks OK, store raw data but don't create entries yet ---
             self._raw_har_data = loaded_data
-            for i, raw_entry_data in enumerate(raw_entries):
-                if isinstance(raw_entry_data, dict):
-                    entry = HarEntry(raw_entry_data, self, i)
-                    self.trace.append(entry)
+            # Entries will be created lazily when trace is accessed
 
         except FileNotFoundError:
             # Keep specific error for file not found
@@ -72,30 +71,26 @@ class HarReader(TraceReader):
                 f"Could not read or process HAR file {self.har_file_path}: {e!r}"
             )
 
-    # --- Implementation of TraceReader abstract methods ---
+    @property
+    def trace(self) -> Trace:
+        """Lazy-load entries when trace is accessed."""
+        if not self._entries_loaded:
+            self._populate_trace_entries()
+        return self._trace
 
-    # def get_entries_for_url(self, url_pattern: str) -> List[CaptureEntry]:
-    #     """
-    #     Retrieves entries whose request URL matches the given regex pattern.
+    def _populate_trace_entries(self) -> None:
+        """Create HarEntry objects from raw HAR data."""
+        if self._entries_loaded or not self._raw_har_data:
+            return
 
-    #     Args:
-    #         url_pattern: A regex pattern to match against the request URL.
+        har_log = self._raw_har_data.get("log", {})
+        raw_entries = har_log.get("entries", [])
+        for i, raw_entry_data in enumerate(raw_entries):
+            if isinstance(raw_entry_data, dict):
+                entry = HarEntry(raw_entry_data, self, i)
+                self._trace.append(entry)
 
-    #     Returns:
-    #         A list of HarEntry objects whose request URL matches the pattern.
-    #     """
-    #     matching_entries: List[CaptureEntry] = []
-    #     url_regex = re.compile(url_pattern)
-
-    #     for entry in self._entries:
-    #         try:
-    #             current_url_str = str(entry.request.url)
-    #             if url_regex.search(current_url_str):
-    #                 matching_entries.append(entry)
-    #         except Exception:
-    #             # Handle cases where URL might be malformed or access fails
-    #             pass
-    #     return matching_entries
+        self._entries_loaded = True
 
     # Placeholder for other potential methods specific to HarReader or common to TraceReader
     # For example, getting creator info, browser info from HAR log.

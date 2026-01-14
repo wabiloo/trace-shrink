@@ -4,7 +4,7 @@ This guide provides a quick overview of how to use `trace-shrink` to analyze you
 
 ## Opening an Archive
 
-The main entry point to the library is the `open_trace` function. It automatically detects the file type (HAR, Proxyman, or Bodylogger) and returns an appropriate `TraceReader` instance.
+The main entry point to the library is the `open_trace` function. It automatically detects the file type (HAR, Proxyman, or Bodylogger) and returns a `Trace` object. The appropriate reader is used internally to load the file, but you work directly with the `Trace` object.
 
 ```python
 from trace_shrink import open_trace
@@ -32,7 +32,7 @@ except ValueError as e:
 
 ## Iterating and Filtering Entries
 
-Once you have a `TraceReader`, you can iterate over its `TraceEntry` objects or use the built-in methods to filter them.
+Once you have a `Trace` object, you can iterate over its `TraceEntry` objects or use the built-in methods to filter them.
 
 ### Basic Iteration
 
@@ -41,7 +41,7 @@ from trace_shrink import open_trace
 
 trace = open_trace("path/to/your/capture.har")
 
-for entry in archive:
+for entry in trace:
     print(f"[{entry.index}] {entry.request.method} {entry.request.url} -> {entry.response.status_code}")
 ```
 
@@ -55,11 +55,11 @@ from trace_shrink import open_trace
 trace = open_trace("path/to/your/capture.har")
 
 # Find all entries for a specific host
-api_calls = archive.filter(host="api.example.com")
+api_calls = trace.filter(host="api.example.com")
 print(f"Found {len(api_calls)} entries for api.example.com")
 
 # Find all HLS manifest files
-hls_manifests = archive.filter(mime_type="application/vnd.apple.mpegurl")
+hls_manifests = trace.filter(mime_type="application/vnd.apple.mpegurl")
 for manifest in hls_manifests:
     print(f"Found HLS manifest: {manifest.request.url}")
 ```
@@ -78,7 +78,7 @@ from trace_shrink import open_trace
 trace = open_trace("path/to/your/capture.har")
 
 # Get all ABR manifest URLs (HLS & DASH)
-manifest_urls = archive.get_abr_manifest_urls()
+manifest_urls = trace.get_abr_manifest_urls()
 
 print("Found ABR Manifests:")
 for decorated_url in manifest_urls:
@@ -86,7 +86,7 @@ for decorated_url in manifest_urls:
     print(f"  Format: {decorated_url.format}")
 
 # You can also filter by a specific format
-hls_urls = archive.get_abr_manifest_urls(format="hls")
+hls_urls = trace.get_abr_manifest_urls(format="hls")
 print(f"\\nFound {len(hls_urls)} HLS manifest(s).")
 ```
 
@@ -98,7 +98,7 @@ Once you have a manifest URL, you can use `get_manifest_stream` to get a `Manife
 from trace_shrink import open_trace
 
 trace = open_trace("path/to/your/capture.har")
-manifest_urls = archive.get_abr_manifest_urls()
+manifest_urls = trace.get_abr_manifest_urls()
 
 if not manifest_urls:
     print("No ABR manifests found in this capture.")
@@ -108,7 +108,7 @@ else:
     print(f"Extracting stream for: {main_manifest_url}\\n")
 
     try:
-        manifest_stream = archive.get_manifest_stream(main_manifest_url)
+        manifest_stream = trace.get_manifest_stream(main_manifest_url)
 
         print(f"Stream has {len(manifest_stream)} entries (refreshes).")
         print("Timeline of manifest refreshes:")

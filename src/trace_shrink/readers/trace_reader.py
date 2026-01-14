@@ -1,21 +1,20 @@
 from abc import ABC
-from collections.abc import Iterator
 from typing import Dict, List, Optional, Pattern
 
 import yarl
 
-from ..utils.formats import Format
+from ..entries.trace_entry import TraceEntry
 from ..manifest_stream import ManifestStream
 from ..trace import DecoratedUrl, Trace
-from ..entries.trace_entry import TraceEntry
+from ..utils.formats import Format
 
 
 class TraceReader(ABC):
     """
-    Abstract base class for all trace readers (HAR, Proxyman, etc).
+    Internal abstract base class for all trace readers (HAR, Proxyman, etc).
 
-    To instantiate the correct reader for a given file, use the
-    `open_trace(path)` factory function provided by the package.
+    This is an internal implementation detail. Users should use `open_trace(path)`
+    which returns a `Trace` object directly.
     """
 
     def __init__(self, trace: Optional[Trace] = None):
@@ -24,16 +23,6 @@ class TraceReader(ABC):
     @property
     def trace(self) -> Trace:
         return self._trace
-
-    @property
-    def entries(self) -> List[TraceEntry]:
-        return self._trace.entries
-
-    def __len__(self) -> int:
-        return len(self._trace)
-
-    def __iter__(self) -> Iterator[TraceEntry]:
-        return iter(self._trace)
 
     def get_entry_by_id(self, entry_id: str) -> Optional[TraceEntry]:
         return self._trace.get_entry_by_id(entry_id)
@@ -45,12 +34,8 @@ class TraceReader(ABC):
     def get_next_entry_by_id(
         self, entry_id: str, direction: int, n: int = 1
     ) -> Optional[TraceEntry]:
-        entry = self.get_entry_by_id(entry_id)
-        if entry is None:
-            return None
-
-        manifest_stream = self.get_manifest_stream(entry.request.url)
-        return manifest_stream.get_relative_entry(entry, direction, n)
+        """Delegates to Trace.get_next_entry_by_id for backward compatibility."""
+        return self._trace.get_next_entry_by_id(entry_id, direction, n)
 
     def get_entries_for_url(self, url: str | yarl.URL) -> List[TraceEntry]:
         return self._trace.get_entries_for_url(url)
@@ -84,4 +69,3 @@ class TraceReader(ABC):
         self, format: Optional[str | Format] = None
     ) -> List[DecoratedUrl]:
         return self._trace.get_abr_manifest_urls(format_filter=format)
-

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from trace_shrink import BodyLoggerReader, BodyLoggerEntry, open_trace
-from trace_shrink import TraceReader
+from trace_shrink import Trace
 
 
 # Path to test bodylogger file
@@ -17,8 +17,7 @@ class TestBodyLoggerReader:
         """Test initialization with a valid bodylogger file."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
         assert isinstance(reader, BodyLoggerReader)
-        assert isinstance(reader, TraceReader)
-        assert len(reader.entries) > 0
+        assert len(reader.trace.entries) > 0
 
     def test_init_with_nonexistent_file(self):
         """Test initialization with a non-existent file."""
@@ -28,27 +27,27 @@ class TestBodyLoggerReader:
     def test_entries_property(self):
         """Test that entries property returns a list of BodyLoggerEntry objects."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entries = reader.entries
+        entries = reader.trace.entries
         assert isinstance(entries, list)
         assert all(isinstance(entry, BodyLoggerEntry) for entry in entries)
 
     def test_len(self):
         """Test that __len__ returns the correct number of entries."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        assert len(reader) == len(reader.entries)
-        assert len(reader) > 0
+        assert len(reader.trace) == len(reader.trace.entries)
+        assert len(reader.trace) > 0
 
     def test_iter(self):
         """Test that __iter__ allows iteration over entries."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entries_list = list(reader)
-        assert len(entries_list) == len(reader)
+        entries_list = list(reader.trace)
+        assert len(entries_list) == len(reader.trace)
         assert all(isinstance(entry, BodyLoggerEntry) for entry in entries_list)
 
     def test_entry_basic_properties(self):
         """Test basic properties of a BodyLoggerEntry."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Test index
         assert entry.index == 0
@@ -65,7 +64,7 @@ class TestBodyLoggerReader:
     def test_entry_request_details(self):
         """Test request details of a BodyLoggerEntry."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Test request URL
         assert entry.request.url is not None
@@ -85,7 +84,7 @@ class TestBodyLoggerReader:
 
         # Find an entry with DASH manifest
         dash_entry = None
-        for entry in reader.entries:
+        for entry in reader.trace.entries:
             if entry.response.mime_type == "application/dash+xml":
                 dash_entry = entry
                 break
@@ -107,7 +106,7 @@ class TestBodyLoggerReader:
     def test_entry_response_body(self):
         """Test response body details of a BodyLoggerEntry."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Test body text
         body_text = entry.response.body.text
@@ -126,7 +125,7 @@ class TestBodyLoggerReader:
     def test_entry_timeline_details(self):
         """Test timeline details of a BodyLoggerEntry."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Test request_start
         assert entry.timeline.request_start is not None
@@ -156,7 +155,7 @@ class TestBodyLoggerReader:
     def test_entry_bodylogger_specific_properties(self):
         """Test bodylogger-specific properties."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Test service_id
         assert entry.service_id is not None
@@ -186,7 +185,7 @@ class TestBodyLoggerReader:
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
 
         # Get service_id from first entry
-        service_id = reader.entries[0].service_id
+        service_id = reader.trace.entries[0].service_id
         filtered_entries = reader.query(service_id=service_id)
 
         assert all(entry.service_id == service_id for entry in filtered_entries)
@@ -198,7 +197,7 @@ class TestBodyLoggerReader:
 
         # Get session_id from first entry that has one
         session_id = None
-        for entry in reader.entries:
+        for entry in reader.trace.entries:
             if entry.session_id:
                 session_id = entry.session_id
                 break
@@ -212,27 +211,27 @@ class TestBodyLoggerReader:
         """Test filtering entries by time range."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
 
-        if len(reader.entries) < 2:
+        if len(reader.trace.entries) < 2:
             pytest.skip("Need at least 2 entries for time range test")
 
-        first_time = reader.entries[0].timeline.request_start
-        last_time = reader.entries[-1].timeline.request_start
+        first_time = reader.trace.entries[0].timeline.request_start
+        last_time = reader.trace.entries[-1].timeline.request_start
 
         # Query for entries in the full range
         filtered_entries = reader.query(start_time=first_time, end_time=last_time)
-        assert len(filtered_entries) == len(reader.entries)
+        assert len(filtered_entries) == len(reader.trace.entries)
 
         # Query for entries after a certain time
-        mid_time = reader.entries[len(reader.entries) // 2].timeline.request_start
+        mid_time = reader.trace.entries[len(reader.trace.entries) // 2].timeline.request_start
         filtered_entries = reader.query(start_time=mid_time)
-        assert len(filtered_entries) <= len(reader.entries)
+        assert len(filtered_entries) <= len(reader.trace.entries)
 
     def test_open_trace_with_bodylogger(self):
         """Test that open_trace can handle bodylogger files."""
-        reader = open_trace(str(TEST_BODYLOGGER_PATH))
-        assert isinstance(reader, BodyLoggerReader)
-        assert isinstance(reader, TraceReader)
-        assert len(reader) > 0
+        from trace_shrink import Trace
+        trace = open_trace(str(TEST_BODYLOGGER_PATH))
+        assert isinstance(trace, Trace)
+        assert len(trace) > 0
 
     def test_content_type_detection(self):
         """Test that content types are correctly detected."""
@@ -240,7 +239,7 @@ class TestBodyLoggerReader:
 
         # Check for DASH content
         dash_entries = [
-            e for e in reader if e.response.mime_type == "application/dash+xml"
+            e for e in reader.trace if e.response.mime_type == "application/dash+xml"
         ]
         assert len(dash_entries) > 0
 
@@ -252,7 +251,7 @@ class TestBodyLoggerReader:
     def test_url_construction(self):
         """Test that URLs are correctly constructed."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         url = entry.request.url
         url_str = str(url)
@@ -269,7 +268,7 @@ class TestBodyLoggerReader:
 
         # Find an entry with query params
         entry_with_params = None
-        for entry in reader.entries:
+        for entry in reader.trace.entries:
             if entry.request.url.query:
                 entry_with_params = entry
                 break
@@ -285,7 +284,7 @@ class TestBodyLoggerEntry:
     def test_get_raw_data(self):
         """Test that get_raw_data returns the underlying dictionary."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         raw_data = entry.get_raw_data()
         assert isinstance(raw_data, dict)
@@ -296,7 +295,7 @@ class TestBodyLoggerEntry:
     def test_content_property(self):
         """Test the content property that returns body text."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         content = entry.content
         # Content should be text for DASH/XML
@@ -307,7 +306,7 @@ class TestBodyLoggerEntry:
     def test_set_comment(self):
         """Test setting a comment on an entry (in-memory only)."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Get original comment (log_type)
         original_comment = entry.comment
@@ -324,7 +323,7 @@ class TestBodyLoggerEntry:
     def test_set_highlight(self):
         """Test setting a highlight on an entry (in-memory only)."""
         reader = BodyLoggerReader(str(TEST_BODYLOGGER_PATH))
-        entry = reader.entries[0]
+        entry = reader.trace.entries[0]
 
         # Initially should be None
         assert entry.highlight is None

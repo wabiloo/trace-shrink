@@ -50,8 +50,8 @@ def test_har_reader_init_success(har_reader: HarReader, real_har_file_path: Path
     assert har_reader.har_file_path == str(real_har_file_path)
     assert har_reader._raw_har_data is not None
     assert "log" in har_reader._raw_har_data
-    assert len(har_reader.entries) > 0
-    assert isinstance(har_reader.entries[0], HarEntry)
+    assert len(har_reader.trace.entries) > 0
+    assert isinstance(har_reader.trace.entries[0], HarEntry)
 
 
 def test_har_reader_init_file_not_found():
@@ -98,23 +98,23 @@ def test_har_reader_init_entries_not_list(dummy_har_file):
 
 def test_har_reader_len(har_reader: HarReader):
     """Test the __len__ method."""
-    assert len(har_reader) == 17
+    assert len(har_reader.trace) == 17
 
 
 def test_har_reader_iter(har_reader: HarReader):
     """Test iterating over the reader."""
     count = 0
-    for entry in har_reader:
+    for entry in har_reader.trace:
         assert isinstance(entry, HarEntry)
         count += 1
-    assert count == len(har_reader)
+    assert count == len(har_reader.trace)
 
 
 def test_har_reader_list_entries(har_reader: HarReader):
     """Test the list_entries method."""
-    entries_list = har_reader.entries
+    entries_list = har_reader.trace.entries
     assert isinstance(entries_list, list)
-    assert len(entries_list) == len(har_reader)
+    assert len(entries_list) == len(har_reader.trace)
     if entries_list:
         assert isinstance(entries_list[0], HarEntry)
 
@@ -122,7 +122,7 @@ def test_har_reader_list_entries(har_reader: HarReader):
 def test_har_reader_get_entries_for_url(har_reader: HarReader):
     """Test filtering entries by URL pattern."""
     # Find entries with 'masterp_360p' in the URL (expecting HLS playlist)
-    hls_entries = har_reader.get_entries_for_partial_url("masterp_360p")
+    hls_entries = har_reader.trace.get_entries_for_partial_url("masterp_360p")
     assert len(hls_entries) > 0  # Expect at least one match in the sample file
     for entry in hls_entries:
         assert isinstance(entry, HarEntry)
@@ -130,13 +130,13 @@ def test_har_reader_get_entries_for_url(har_reader: HarReader):
 
     # Find entries for a specific host (using regex)
     # Note: Host matching might depend on case sensitivity of regex
-    bpk_entries = har_reader.get_entries_for_partial_url("https://stream.broadpeak.io")
+    bpk_entries = har_reader.trace.get_entries_for_partial_url("https://stream.broadpeak.io")
     assert len(bpk_entries) > 0  # Expect matches
     for entry in bpk_entries:
         assert entry.request.url.host == "stream.broadpeak.io"
 
     # Test no match
-    no_match_entries = har_reader.get_entries_for_partial_url("nonexistentdomain")
+    no_match_entries = har_reader.trace.get_entries_for_partial_url("nonexistentdomain")
     assert len(no_match_entries) == 0
 
 
@@ -145,7 +145,7 @@ def test_har_reader_get_entries_for_url(har_reader: HarReader):
 
 def test_har_entry_properties_from_reader(har_reader: HarReader):
     """Test properties of a specific entry loaded via the reader."""
-    hls_entries = har_reader.get_entries_for_partial_url("masterp_360p@1.m3u8")
+    hls_entries = har_reader.trace.get_entries_for_partial_url("masterp_360p@1.m3u8")
     assert len(hls_entries) >= 1
     entry = hls_entries[0]
 

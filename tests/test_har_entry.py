@@ -226,7 +226,7 @@ def test_har_started_datetime_timezone():
     # Use bodylogger entries which have naive datetime objects (no timezone)
     bodylogger_path = Path(__file__).parent / "archives" / "bodylogger.log"
     reader = BodyLoggerReader(str(bodylogger_path))
-    entry = reader.entries[0]
+    entry = reader.trace.entries[0]
 
     # Verify entry has naive datetime (no timezone)
     assert entry.timeline.request_start.tzinfo is None

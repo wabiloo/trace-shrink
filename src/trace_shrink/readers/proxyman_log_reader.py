@@ -3,10 +3,11 @@ import json
 import os
 import re
 import zipfile
-from typing import Any, Dict, Iterator, List, Optional
+from collections.abc import Iterator
+from typing import Any, Dict, List, Optional
 
 from ..entries.proxyman_entry import ProxymanLogV2Entry
-from ..entries.trace_entry import TraceEntry
+from ..trace import Trace
 from .trace_reader import TraceReader
 
 
@@ -44,7 +45,7 @@ class ProxymanLogV2Reader(TraceReader):
         self._trace_populated = False
         try:
             self._scan_and_index()
-            self._populate_trace_entries()
+            # Don't populate entries eagerly - lazy load when trace is accessed
         except Exception as e:
             raise RuntimeError(
                 f"Failed to initialize ProxymanLogV2Reader due to scan error: {e}"
@@ -101,6 +102,13 @@ class ProxymanLogV2Reader(TraceReader):
         except Exception as e:
             raise RuntimeError(f"Unexpected error during archive scan: {e}")
 
+    @property
+    def trace(self) -> Trace:
+        """Lazy-load entries when trace is accessed."""
+        if not self._trace_populated:
+            self._populate_trace_entries()
+        return self._trace
+
     def _populate_trace_entries(self) -> None:
         if self._trace_populated:
             return
@@ -108,7 +116,7 @@ class ProxymanLogV2Reader(TraceReader):
         for filename in self._sorted_index:
             entry = self._parse_entry(filename)
             if entry:
-                self.trace.append(entry)
+                self._trace.append(entry)
 
         self._trace_populated = True
 
@@ -129,14 +137,6 @@ class ProxymanLogV2Reader(TraceReader):
         Host and URI might be None if the entry content was unreadable during indexing.
         """
         return self._index.copy()
-
-    def __len__(self) -> int:
-        """Returns the total number of indexed entries."""
-        return len(self._index)
-
-    def __iter__(self) -> Iterator[ProxymanLogV2Entry]:
-        """Iterates over all ProxymanLogV2Entry objects in the archive, sorted by their numerical index."""
-        return iter(self.trace)
 
     def _parse_entry(self, entry_filename: str) -> Optional[ProxymanLogV2Entry]:
         """
@@ -175,15 +175,6 @@ class ProxymanLogV2Reader(TraceReader):
             return None
         except Exception:
             return None
-
-    @property
-    def entries(self) -> List[ProxymanLogV2Entry]:
-        """
-        Returns a list of all ProxymanLogV2Entry objects, sorted by their numerical index.
-
-        Accessing this property will trigger the loading of all entries from the archive.
-        """
-        return list(self.trace)
 
     @functools.lru_cache(maxsize=256)
     def list_entries_by_host(self, host_to_match: Optional[str]) -> List[str]:

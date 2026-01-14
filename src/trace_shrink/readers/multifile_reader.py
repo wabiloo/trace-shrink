@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import os
 import re
-from collections.abc import Iterator
 from typing import List
 
 from ..entries.multifile_entry import MultiFileTraceEntry
+from ..trace import Trace
 from .trace_reader import TraceReader
 
 
-class MultiFileFolderArchive(TraceReader):
+class MultiFileFolderReader(TraceReader):
     """TraceReader backed by a folder containing request_N.meta.json and request_N.body files."""
 
     META_RE = re.compile(r"request_(\d+)\.meta\.json$")
@@ -20,18 +20,13 @@ class MultiFileFolderArchive(TraceReader):
         self._entries_loaded = False
 
     @property
-    def entries(self) -> List[MultiFileTraceEntry]:
+    def trace(self) -> Trace:
+        """Lazy-load entries when trace is accessed."""
         if not self._entries_loaded:
             entries = self._scan_folder()
-            self.trace.extend(entries)
+            self._trace.extend(entries)
             self._entries_loaded = True
-        return self.trace.entries
-
-    def __len__(self) -> int:
-        return len(self.entries)
-
-    def __iter__(self) -> Iterator[MultiFileTraceEntry]:
-        return iter(self.trace)
+        return self._trace
 
     def _scan_folder(self) -> List[MultiFileTraceEntry]:
         if not os.path.isdir(self.folder_path):
