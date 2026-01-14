@@ -38,6 +38,16 @@ class Trace:
     def entries(self) -> List[TraceEntry]:
         return self._entries
 
+    @property
+    def path(self) -> Optional[str]:
+        """The path to the trace file or directory."""
+        return self.metadata.get("path")
+
+    @property
+    def format(self) -> Optional[str]:
+        """The format of the trace file: 'har', 'proxymanlogv2', 'bodylogger', or 'multifile'."""
+        return self.metadata.get("format")
+
     def __len__(self) -> int:
         return len(self._entries)
 

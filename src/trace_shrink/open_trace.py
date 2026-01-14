@@ -56,6 +56,8 @@ def open_trace(path: str) -> Trace:
     Trace object is the primary interface for accessing entries, filtering them,
     extracting ManifestStream, etc.
 
+    The returned Trace object will have 'path' and 'format' properties set.
+
     Raises ValueError for unknown/unsupported file formats.
     """
     format = detect_format(path)
@@ -72,4 +74,8 @@ def open_trace(path: str) -> Trace:
         # This should never happen if detect_format is correct, but handle it anyway
         raise ValueError(f"Unsupported trace format: {format}")
 
-    return reader.trace
+    trace = reader.trace
+    # Set path and format metadata
+    trace.metadata["path"] = path
+    trace.metadata["format"] = format
+    return trace
