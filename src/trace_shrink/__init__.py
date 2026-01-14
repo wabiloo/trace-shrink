@@ -2,20 +2,15 @@
 ABR Capture Inspector Library
 """
 
+from .abr import ManifestStream
 from .entries.bodylogger_entry import BodyLoggerEntry
 from .entries.har_entry import HarEntry
 from .entries.multifile_entry import MultiFileTraceEntry
 from .entries.proxyman_entry import ProxymanLogV2Entry
 from .entries.requests_entry import RequestsResponseTraceEntry
-from .entries.trace_entry import (
-    RequestDetails,
-    ResponseBodyDetails,
-    ResponseDetails,
-    TimelineDetails,
-    TraceEntry,
-)
+from .entries.trace_entry import (RequestDetails, ResponseBodyDetails,
+                                  ResponseDetails, TimelineDetails, TraceEntry)
 from .exporter import Exporter
-from .manifest_stream import ManifestStream
 from .open_trace import detect_format, open_trace
 from .readers.bodylogger_reader import BodyLoggerReader
 from .readers.har_reader import HarReader

@@ -1,22 +1,13 @@
 from __future__ import annotations
 
 import re
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Pattern,
-    Sequence,
-    Union,
-)
+from typing import (Any, Dict, Iterable, Iterator, List, Optional, Pattern,
+                    Sequence, Union)
 
 import yarl
 
+from .abr import AbrDetector, ManifestStream
 from .entries.trace_entry import TraceEntry
-from .manifest_stream import ManifestStream
 from .utils.formats import Format
 
 
@@ -33,6 +24,7 @@ class Trace:
         self._url_index: Optional[Dict[str, List[TraceEntry]]] = None
         self._path_index: Optional[Dict[str, List[TraceEntry]]] = None
         self._id_index: Optional[Dict[str, TraceEntry]] = None
+        self.abr_detector: AbrDetector = AbrDetector()
 
     @property
     def entries(self) -> List[TraceEntry]:
@@ -220,6 +212,8 @@ class Trace:
         if isinstance(format_filter, str):
             format_filter = Format(format_filter)
         urls: List[DecoratedUrl] = []
+        ignored_params = self.abr_detector.get_ignored_query_params()
+        
         for entry in self._entries:
             abr_format = Format.from_url_or_mime_type(
                 entry.response.mime_type, entry.request.url
@@ -229,7 +223,8 @@ class Trace:
             ):
                 continue
 
-            if entry.request.url.query.get("bk-ml") is not None:
+            # Skip entries with ignored query parameters
+            if any(entry.request.url.query.get(param) is not None for param in ignored_params):
                 continue
 
             urls.append(DecoratedUrl(entry.request.url, abr_format.value))
