@@ -274,10 +274,17 @@ class HarEntry(TraceEntry):
                 timeline.response_end - request_start
             ).total_seconds() * 1000.0
 
-        # Format startedDateTime as ISO 8601 string
-        started_date_time = (
-            request_start.isoformat() if request_start else datetime.now().isoformat()
-        )
+        # Format startedDateTime as ISO 8601 string with timezone
+        # HAR spec requires timezone (TZD). If missing, assume UTC (+00:00)
+        if request_start is None:
+            raise ValueError("request_start is required for HAR export but is None")
+
+        iso_str = request_start.isoformat()
+        # Check if timezone is present
+        if request_start.tzinfo is None:
+            # No timezone info, add UTC offset
+            iso_str += "+00:00"
+        started_date_time = iso_str
 
         # Convert headers
         request_headers = [

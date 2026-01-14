@@ -215,3 +215,60 @@ def test_har_str_repr(sample_har_entry):
         repr(sample_har_entry)
         == "<HarEntry id=index-0 POST https://api.example.com/v1/data?param=value -> 201>"
     )
+
+
+def test_har_started_datetime_timezone():
+    """Test that startedDateTime always includes timezone (UTC if missing)."""
+    from datetime import datetime
+    from trace_shrink import BodyLoggerReader
+    from pathlib import Path
+
+    # Use bodylogger entries which have naive datetime objects (no timezone)
+    bodylogger_path = Path(__file__).parent / "archives" / "bodylogger.log"
+    reader = BodyLoggerReader(str(bodylogger_path))
+    entry = reader.entries[0]
+
+    # Verify entry has naive datetime (no timezone)
+    assert entry.timeline.request_start.tzinfo is None
+
+    # Export to HAR format
+    har_dict = HarEntry.from_trace_entry(entry, 0)
+    started_date_time = har_dict.get("startedDateTime")
+
+    # Verify timezone is present (should end with +00:00 or Z or have offset)
+    assert started_date_time is not None
+    assert "+00:00" in started_date_time or started_date_time.endswith("Z") or "+" in started_date_time or "-" in started_date_time[-6:]
+
+
+def test_har_started_datetime_requires_request_start():
+    """Test that ValueError is raised when request_start is None."""
+    from unittest.mock import MagicMock
+    from trace_shrink import TimelineDetails, RequestDetails, ResponseDetails
+
+    # Create a mock entry with None request_start
+    mock_entry = MagicMock()
+    mock_entry.request = MagicMock(spec=RequestDetails)
+    mock_entry.request.url = URL("http://example.com")
+    mock_entry.request.method = "GET"
+    mock_entry.request.headers = {}
+    mock_entry.response = MagicMock(spec=ResponseDetails)
+    mock_entry.response.status_code = 200
+    mock_entry.response.headers = {}
+    mock_entry.response.mime_type = "text/html"
+    mock_entry.response.content_type = "text/html"
+    mock_entry.response.body.text = None
+    mock_entry.response.body.raw_size = 0
+    mock_entry.response.body.compressed_size = 0
+    
+    # Create timeline with None request_start
+    timeline = TimelineDetails(
+        request_start=None,
+        request_end=None,
+        response_start=None,
+        response_end=None,
+    )
+    mock_entry.timeline = timeline
+
+    # Verify ValueError is raised
+    with pytest.raises(ValueError, match="request_start is required"):
+        HarEntry.from_trace_entry(mock_entry, 0)
