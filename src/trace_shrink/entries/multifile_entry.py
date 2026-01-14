@@ -32,7 +32,7 @@ class MultiFileTraceEntry(TraceEntry):
     ):
         self._exchange = exchange
         self._body_bytes = body_bytes
-        self._annotations = annotations or {}
+        annotations_dict = annotations or {}
 
         # Parse request
         request_data = exchange.get("request", {})
@@ -101,20 +101,22 @@ class MultiFileTraceEntry(TraceEntry):
         )
 
         # Initialize TraceEntry
+        # Filter out comment and highlight from annotations dict (they're handled separately)
+        filtered_annotations = {
+            k: v
+            for k, v in annotations_dict.items()
+            if k not in ("comment", "highlight")
+        }
         super().__init__(
             index=index,
             entry_id=str(index),
             request=request,
             response=response,
             timeline=timeline,
-            comment=annotations.get("comment") if annotations else None,
-            highlight=annotations.get("highlight") if annotations else None,
+            comment=annotations_dict.get("comment"),
+            highlight=annotations_dict.get("highlight"),
+            annotations=filtered_annotations,
         )
-
-    @property
-    def annotations(self) -> Dict[str, str]:
-        """Return annotations dict for backward compatibility."""
-        return dict(self._annotations)
 
     @classmethod
     def from_files(

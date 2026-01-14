@@ -194,6 +194,7 @@ class TraceEntry:
         timeline: TimelineDetails,
         comment: Optional[str] = None,
         highlight: Optional[str] = None,
+        annotations: Optional[Dict[str, str]] = None,
     ):
         self._index = index
         self._id = entry_id
@@ -202,6 +203,7 @@ class TraceEntry:
         self._timeline = timeline
         self._comment = comment
         self._highlight = highlight
+        self._annotations = annotations or {}
 
         # Override storage for mutations
         self._override_comment: Optional[str] = None
@@ -209,6 +211,7 @@ class TraceEntry:
         self._override_request_headers: Dict[str, str] = {}
         self._override_response_headers: Dict[str, str] = {}
         self._override_response_content: Optional[str] = None
+        self._override_annotations: Dict[str, str] = {}
 
     @property
     def index(self) -> int:
@@ -304,6 +307,40 @@ class TraceEntry:
     def set_response_content(self, content: str) -> None:
         """Set the response body content."""
         self._override_response_content = content
+
+    @property
+    def annotations(self) -> Dict[str, str]:
+        """Return annotations dict, merging overrides with original annotations.
+
+        Filters out None values (which represent removed annotations).
+        """
+        merged = dict(self._annotations)
+        # Update with overrides, filtering out None values (removed annotations)
+        for key, value in self._override_annotations.items():
+            if value is None:
+                # Remove annotation if it was marked as None
+                merged.pop(key, None)
+            else:
+                merged[key] = value
+        return merged
+
+    def add_annotation(self, annotation_type: str, content: str) -> None:
+        """Add or update an annotation.
+
+        Args:
+            annotation_type: The type/key of the annotation (e.g., "digest", "dash-preview")
+            content: The annotation content/value
+        """
+        self._override_annotations[annotation_type] = content
+
+    def remove_annotation(self, annotation_type: str) -> None:
+        """Remove an annotation.
+
+        Args:
+            annotation_type: The type/key of the annotation to remove
+        """
+        # Mark as removed by setting to None in overrides
+        self._override_annotations[annotation_type] = None
 
     @property
     def content(self) -> bytes | str:

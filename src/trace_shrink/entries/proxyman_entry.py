@@ -393,6 +393,18 @@ class ProxymanLogV2Entry(TraceEntry):
             "error": None,
         }
 
+        # Add annotations to customPreviewerTabs if present
+        annotations = entry.annotations
+        if annotations:
+            # Filter out None values (removed annotations) and empty strings
+            custom_previewer_tabs = {
+                key: value
+                for key, value in annotations.items()
+                if value is not None and value != ""
+            }
+            if custom_previewer_tabs:
+                response_obj["customPreviewerTabs"] = custom_previewer_tabs
+
         # Build timing object
         timing_obj: Dict[str, float] = {}
         if timeline.request_start:
