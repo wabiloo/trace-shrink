@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from ..entries.requests_entry import RequestsResponseTraceEntry
 from ..entries.trace_entry import TraceEntry
+from ..utils.formats import get_extension_for_entry
 
 
 def entry_to_exchange(entry: TraceEntry) -> Dict:
@@ -54,54 +55,71 @@ def entry_to_exchange(entry: TraceEntry) -> Dict:
     return exchange
 
 
-def write_multifile_entry(
-    folder: str,
-    index: int,
-    entry: TraceEntry,
-    body_bytes: Optional[bytes] = None,
-    body_extension: Optional[str] = None,
-) -> None:
-    """Write meta, body and annotation files for a TraceEntry into `folder` using index.
+class MultifileWriter:
+    """Writer for multifile trace format.
 
-    Files written:
-    - request_{index}.meta.json
-    - request_{index}.body{body_extension} (binary, e.g., .body.m3u8 or .body.mpd)
-    - request_{index}.{name}.txt for each annotation
-
-    Args:
-        folder: Directory to write files to
-        index: Request index number
-        entry: TraceEntry object containing request/response data
-        body_bytes: Optional body content as bytes (if not provided, extracted from entry)
-        body_extension: Optional extension to append after .body (e.g., ".m3u8", ".mpd")
+    Writes trace entries to a folder with the following structure:
+    - request_{index:06d}.meta.json
+    - request_{index:06d}.body{extension}
+    - request_{index:06d}.{annotation_name}.txt
     """
-    folder_path = Path(folder)
-    folder_path.mkdir(parents=True, exist_ok=True)
-    basename = f"request_{index}"
-    exchange = entry_to_exchange(entry)
 
-    meta_path = folder_path / f"{basename}.meta.json"
-    with meta_path.open("w", encoding="utf-8") as mf:
-        json.dump(exchange, mf, indent=2)
+    def __init__(self, folder: str | Path):
+        """Initialize the MultifileWriter.
 
-    # Body
-    # TODO: determine if from the entry (content-type) if not provided
-    body_extension = body_extension or ""
-    body_path = folder_path / f"{basename}.body{body_extension}"
-    if body_bytes is None:
-        # Extract body bytes from entry
-        body = entry.response.body
-        body_bytes = body._get_decoded_body()
+        Args:
+            folder: Path to the folder where files will be written
+        """
+        self.folder_path = Path(folder)
+        self.folder_path.mkdir(parents=True, exist_ok=True)
 
-    if body_bytes is not None:
-        with body_path.open("wb") as bf:
-            bf.write(body_bytes)
+    def add_entry(
+        self,
+        entry: TraceEntry,
+        index: int,
+        body_bytes: Optional[bytes] = None,
+    ) -> None:
+        """Add a trace entry to the multifile archive.
 
-    # Annotations - write all annotations from entry
-    for name, text in entry.annotations.items():
-        ann_path = folder_path / f"{basename}.{name}.txt"
-        try:
-            with ann_path.open("w", encoding="utf-8") as af:
-                af.write(text)
-        except Exception:
-            pass
+        Files written:
+        - request_{index:06d}.meta.json
+        - request_{index:06d}.body{extension} (extension determined from content-type)
+        - request_{index:06d}.{name}.txt for each annotation
+
+        Args:
+            entry: TraceEntry object to write
+            index: Request index number (will be zero-padded to 6 digits)
+            body_bytes: Optional body content as bytes (if not provided, extracted from entry)
+        """
+        # Format index with zero-padding to 6 digits
+        index_str = f"{index:06d}"
+        basename = f"request_{index_str}"
+        exchange = entry_to_exchange(entry)
+
+        # Write meta.json
+        meta_path = self.folder_path / f"{basename}.meta.json"
+        with meta_path.open("w", encoding="utf-8") as mf:
+            json.dump(exchange, mf, indent=2)
+
+        # Determine extension from content-type or URL
+        extension = get_extension_for_entry(entry)
+
+        # Write body file
+        if body_bytes is None:
+            # Extract body bytes from entry
+            body = entry.response.body
+            body_bytes = body._get_decoded_body()
+
+        if body_bytes is not None:
+            body_path = self.folder_path / f"{basename}.body{extension}"
+            with body_path.open("wb") as bf:
+                bf.write(body_bytes)
+
+        # Write annotations
+        for name, text in entry.annotations.items():
+            ann_path = self.folder_path / f"{basename}.{name}.txt"
+            try:
+                with ann_path.open("w", encoding="utf-8") as af:
+                    af.write(text)
+            except Exception:
+                pass

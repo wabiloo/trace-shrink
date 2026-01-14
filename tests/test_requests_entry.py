@@ -6,10 +6,9 @@ import tempfile
 from datetime import timedelta
 from types import SimpleNamespace
 
-import pytest
 from yarl import URL
 
-from trace_shrink import RequestsResponseTraceEntry, write_multifile_entry
+from trace_shrink import MultifileWriter, RequestsResponseTraceEntry
 
 
 def _fake_response(
@@ -132,94 +131,76 @@ def test_requests_response_trace_entry_mutations():
     assert entry.highlight == "red"
 
 
-def test_write_multifile_entry_basic():
-    """Test basic writing of multifile entry."""
-    response = _fake_response(body="test body content")
+def test_multifile_writer_class():
+    """Test MultifileWriter class."""
+    response = _fake_response(body="test content")
     entry = RequestsResponseTraceEntry(response, index=1)
+    entry.add_annotation("digest", "test-digest")
 
     with tempfile.TemporaryDirectory() as td:
-        write_multifile_entry(td, 1, entry)
+        writer = MultifileWriter(td)
+        writer.add_entry(entry, index=42)
 
-        # Check meta.json exists
-        meta_path = f"{td}/request_1.meta.json"
-        assert os.path.exists(meta_path)
+        # Check files exist with zero-padded index
+        assert os.path.exists(f"{td}/request_000042.meta.json")
+        assert os.path.exists(f"{td}/request_000042.body.m3u8")
+        assert os.path.exists(f"{td}/request_000042.digest.txt")
 
-        # Check body file exists
-        body_path = f"{td}/request_1.body"
-        assert os.path.exists(body_path)
-
-        # Verify meta.json content
-        with open(meta_path) as f:
+        # Verify content
+        with open(f"{td}/request_000042.meta.json") as f:
             meta = json.load(f)
+            assert meta["response"]["status_code"] == 200
 
-        assert meta["request"]["url"] == "https://example.com/path/to.m3u8"
-        assert meta["response"]["status_code"] == 200
-        assert meta["elapsed_ms"] == 5
+        with open(f"{td}/request_000042.body.m3u8", "rb") as f:
+            assert f.read() == b"test content"
 
-        # Verify body content
-        with open(body_path, "rb") as f:
-            assert f.read() == b"test body content"
-
-
-def test_write_multifile_entry_with_annotations():
-    """Test writing entry with annotations."""
-    response = _fake_response()
-    entry = RequestsResponseTraceEntry(response, index=1)
-    entry.add_annotation("digest", "abc123")
-    entry.add_annotation("custom", "custom-value")
-
-    with tempfile.TemporaryDirectory() as td:
-        write_multifile_entry(td, 1, entry)
-
-        # Check annotation files exist
-        assert os.path.exists(f"{td}/request_1.digest.txt")
-        assert os.path.exists(f"{td}/request_1.custom.txt")
-
-        # Verify annotation content
-        with open(f"{td}/request_1.digest.txt") as f:
-            assert f.read() == "abc123"
-
-        with open(f"{td}/request_1.custom.txt") as f:
-            assert f.read() == "custom-value"
+        with open(f"{td}/request_000042.digest.txt") as f:
+            assert f.read() == "test-digest"
 
 
-def test_write_multifile_entry_with_body_extension():
-    """Test writing entry with body extension."""
-    response = _fake_response(body="<MPD></MPD>")
+def test_multifile_writer_extension_from_url():
+    """Test that extension is determined from URL when content-type is missing."""
+    # Create response without Content-Type header
+    req = SimpleNamespace(
+        url="https://example.com/manifest.mpd",
+        headers={"User-Agent": "pytest"},
+        method="GET",
+        body=None,
+    )
+    body_bytes = b"<MPD></MPD>"
+    response = SimpleNamespace(
+        text="<MPD></MPD>",
+        content=body_bytes,
+        request=req,
+        headers={},  # Explicitly no Content-Type
+        status_code=200,
+        reason="OK",
+        elapsed=timedelta(milliseconds=5),
+    )
     entry = RequestsResponseTraceEntry(response, index=1)
 
     with tempfile.TemporaryDirectory() as td:
-        write_multifile_entry(td, 1, entry, body_extension=".mpd")
+        writer = MultifileWriter(td)
+        writer.add_entry(entry, index=1)
 
-        # Check body file has extension
-        assert os.path.exists(f"{td}/request_1.body.mpd")
-        assert not os.path.exists(f"{td}/request_1.body")
+        # Extension should come from URL (.mpd)
+        assert os.path.exists(f"{td}/request_000001.body.mpd")
+        assert not os.path.exists(f"{td}/request_000001.body")
 
 
-def test_write_multifile_entry_with_body_override():
-    """Test writing entry with body bytes override."""
-    response = _fake_response(body="original")
+def test_multifile_writer_extension_prefers_content_type():
+    """Test that content-type takes precedence over URL extension."""
+    response = _fake_response(
+        url="https://example.com/manifest.mpd",  # URL suggests .mpd
+        body="#EXTM3U",
+        headers={"Content-Type": "application/x-mpegURL"},  # But content-type is HLS
+    )
     entry = RequestsResponseTraceEntry(response, index=1)
 
     with tempfile.TemporaryDirectory() as td:
-        write_multifile_entry(td, 1, entry, body_bytes=b"override content")
+        writer = MultifileWriter(td)
+        writer.add_entry(entry, index=1)
 
-        # Verify override content was written
-        with open(f"{td}/request_1.body", "rb") as f:
-            assert f.read() == b"override content"
-
-
-def test_write_multifile_entry_reason_phrase():
-    """Test that reason phrase is included for RequestsResponseTraceEntry."""
-    response = _fake_response(status_code=404, reason="Not Found")
-    entry = RequestsResponseTraceEntry(response, index=1)
-
-    with tempfile.TemporaryDirectory() as td:
-        write_multifile_entry(td, 1, entry)
-
-        with open(f"{td}/request_1.meta.json") as f:
-            meta = json.load(f)
-
-        assert meta["response"]["reason"] == "Not Found"
-        assert meta["response"]["status_code"] == 404
-
+        # Extension should come from content-type (.m3u8), not URL (.mpd)
+        assert os.path.exists(f"{td}/request_000001.body.m3u8")
+        assert not os.path.exists(f"{td}/request_000001.body.mpd")

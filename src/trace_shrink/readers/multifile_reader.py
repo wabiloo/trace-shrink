@@ -39,23 +39,25 @@ class MultiFileFolderReader(TraceReader):
             m = self.META_RE.search(f)
             if m:
                 idx = int(m.group(1))
-                metas.append((idx, f))
+                # Store both the index and the actual filename prefix (for zero-padded support)
+                metas.append((idx, f, m.group(1)))
 
         metas.sort()
         entries: List[MultiFileTraceEntry] = []
-        for idx, meta_fn in metas:
+        for idx, meta_fn, idx_str in metas:
             meta_path = folder_path / meta_fn
-            # possible body files: request_{idx}.body* (any extension)
+            # possible body files: request_{idx_str}.body* (any extension)
+            # Use idx_str to match zero-padded format
             body_path = None
-            prefix = f"request_{idx}.body"
+            prefix = f"request_{idx_str}.body"
             for f in files:
                 if f.startswith(prefix):
                     body_path = folder_path / f
                     break
 
-            # annotations: request_{idx}.*.txt (e.g., request_1.digest.txt)
+            # annotations: request_{idx_str}.*.txt (e.g., request_000001.digest.txt)
             ann_paths = []
-            ann_prefix = f"request_{idx}."
+            ann_prefix = f"request_{idx_str}."
             for f in files:
                 if f.startswith(ann_prefix) and f.endswith(".txt") and f != meta_fn:
                     # Skip the meta.json file, only include .txt annotation files

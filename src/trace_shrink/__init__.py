@@ -24,7 +24,7 @@ from .readers.proxyman_log_reader import ProxymanLogV2Reader
 from .trace import DecoratedUrl, Trace
 from .utils.formats import Format, MimeType
 from .writers.har_writer import HarWriter
-from .writers.multifile_writer import write_multifile_entry
+from .writers.multifile_writer import MultifileWriter
 from .writers.proxyman_writer import ProxymanWriter
 
 __all__ = [
@@ -52,5 +52,5 @@ __all__ = [
     "Format",
     "MimeType",
     "DecoratedUrl",
-    "write_multifile_entry",
+    "MultifileWriter",
 ]

@@ -86,6 +86,17 @@ def test_to_format(mime_type, expected):
 
 
 @pytest.mark.parametrize(
+    "format, expected",
+    [
+        (Format.HLS, ".m3u8"),
+        (Format.DASH, ".mpd"),
+    ],
+)
+def test_format_to_extension(format, expected):
+    assert format.to_extension() == expected
+
+
+@pytest.mark.parametrize(
     "extension, expected",
     [
         ("m3u8", Format.HLS),
