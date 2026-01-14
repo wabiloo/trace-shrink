@@ -49,6 +49,8 @@ class MultiFileTraceEntry(TraceEntry):
 
         # Parse response
         response_data = exchange.get("response", {})
+        response_headers = dict(response_data.get("headers", {}))
+
         body_text = None
         if body_bytes is not None:
             try:
@@ -65,11 +67,27 @@ class MultiFileTraceEntry(TraceEntry):
             decoded_body=body_bytes,
         )
 
+        # Extract content_type from response headers (Content-Type header)
+        # Fall back to response_data if not in headers
+        content_type = response_data.get("content_type")
+        if not content_type:
+            content_type = response_headers.get("Content-Type")
+
+        # Extract mime_type from content_type (split on ';' to remove parameters)
+        # Fall back to response_data if not available
+        mime_type = response_data.get("mime_type")
+        if not mime_type and content_type:
+            mime_type = (
+                content_type.split(";")[0].strip()
+                if isinstance(content_type, str)
+                else None
+            )
+
         response = ResponseDetails(
-            headers=dict(response_data.get("headers", {})),
+            headers=response_headers,
             status_code=int(response_data.get("status_code", 0)),
-            mime_type=response_data.get("mime_type"),
-            content_type=response_data.get("content_type"),
+            mime_type=mime_type,
+            content_type=content_type,
             body=response_body,
         )
 
@@ -144,7 +162,17 @@ class MultiFileTraceEntry(TraceEntry):
             for p in annotations_paths:
                 try:
                     with open(p, "r") as af:
-                        ann_name = os.path.basename(p).replace(".txt", "")
+                        basename = os.path.basename(p)
+                        # Remove request_{index}. prefix and .txt suffix
+                        # e.g., request_1.digest.txt -> digest
+                        prefix = f"request_{index}."
+                        if basename.startswith(prefix) and basename.endswith(".txt"):
+                            ann_name = basename[
+                                len(prefix) : -4
+                            ]  # Remove prefix and .txt
+                        else:
+                            # Fallback: just remove .txt if pattern doesn't match
+                            ann_name = basename.replace(".txt", "")
                         ann[ann_name] = af.read()
                 except Exception:
                     pass

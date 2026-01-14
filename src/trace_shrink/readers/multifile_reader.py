@@ -52,13 +52,13 @@ class MultiFileFolderReader(TraceReader):
                     body_path = os.path.join(self.folder_path, f)
                     break
 
-            # annotations: request_{idx}.digest.txt or *.txt
+            # annotations: request_{idx}.*.txt (e.g., request_1.digest.txt)
             ann_paths = []
-            digest_candidate = os.path.join(
-                self.folder_path, f"request_{idx}.digest.txt"
-            )
-            if os.path.exists(digest_candidate):
-                ann_paths.append(digest_candidate)
+            ann_prefix = f"request_{idx}."
+            for f in files:
+                if f.startswith(ann_prefix) and f.endswith(".txt") and f != meta_fn:
+                    # Skip the meta.json file, only include .txt annotation files
+                    ann_paths.append(os.path.join(self.folder_path, f))
 
             entry = MultiFileTraceEntry.from_files(
                 idx, meta_path, body_path or "", ann_paths

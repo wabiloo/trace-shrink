@@ -195,8 +195,18 @@ class Trace:
         return ManifestStream(entries)
 
     def get_abr_manifest_urls(
-        self, format_filter: Optional[Union[str, Format]] = None
+        self, format: Optional[Union[str, Format]] = None
     ) -> List[DecoratedUrl]:
+        """
+        Get all ABR manifest URLs in the trace.
+
+        Args:
+            format: Optional format filter (Format.HLS, Format.DASH, or string like "hls", "dash")
+
+        Returns:
+            List of DecoratedUrl objects containing manifest URLs and their formats
+        """
+        format_filter = format
         if isinstance(format_filter, str):
             format_filter = Format(format_filter)
         urls: List[DecoratedUrl] = []

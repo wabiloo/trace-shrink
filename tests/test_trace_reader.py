@@ -180,7 +180,7 @@ class TestTraceGetAbrManifestUrls:
             "The set of returned URLs and formats does not match the expected set."
         )
 
-        actual_hls_urls = trace.get_abr_manifest_urls(format_filter=Format.HLS)
+        actual_hls_urls = trace.get_abr_manifest_urls(format=Format.HLS)
         assert len(actual_hls_urls) == len(expected_urls_formats_set), (
             f"Expected {len(expected_urls_formats_set)} HLS manifest URLs, but got {len(actual_hls_urls)}"
         )
@@ -188,7 +188,7 @@ class TestTraceGetAbrManifestUrls:
             "The set of returned URLs and formats does not match the expected set."
         )
 
-        actual_dash_urls = trace.get_abr_manifest_urls(format_filter=Format.DASH)
+        actual_dash_urls = trace.get_abr_manifest_urls(format=Format.DASH)
         assert len(actual_dash_urls) == 0, (
             f"Expected {len(expected_urls_formats_set)} DASH manifest URLs, but got {len(actual_dash_urls)}"
         )

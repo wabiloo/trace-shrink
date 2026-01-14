@@ -68,4 +68,4 @@ class TraceReader(ABC):
     def get_abr_manifest_urls(
         self, format: Optional[str | Format] = None
     ) -> List[DecoratedUrl]:
-        return self._trace.get_abr_manifest_urls(format_filter=format)
+        return self._trace.get_abr_manifest_urls(format=format)
