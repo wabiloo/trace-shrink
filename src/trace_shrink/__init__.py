@@ -15,7 +15,7 @@ from .entries.trace_entry import (
 )
 from .exporter import Exporter
 from .manifest_stream import ManifestStream
-from .open_trace import open_trace
+from .open_trace import detect_format, open_trace
 from .readers.bodylogger_reader import BodyLoggerReader
 from .readers.har_reader import HarReader
 from .readers.multifile_reader import MultiFileFolderReader
@@ -42,6 +42,7 @@ __all__ = [
     "HarWriter",
     "ManifestStream",
     "open_trace",
+    "detect_format",
     "Exporter",
     "Trace",
     "MultiFileTraceEntry",

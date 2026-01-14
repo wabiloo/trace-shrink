@@ -1,10 +1,50 @@
 import os
+from pathlib import Path
+from typing import Union
 
 from .readers.bodylogger_reader import BodyLoggerReader
 from .readers.har_reader import HarReader
 from .readers.multifile_reader import MultiFileFolderReader
 from .readers.proxyman_log_reader import ProxymanLogV2Reader
 from .trace import Trace
+
+
+def detect_format(path: Union[str, Path]) -> str:
+    """
+    Detect the format of a trace file from its path.
+
+    Args:
+        path: Path to the trace file or directory (as string or Path object)
+
+    Returns:
+        Format string: "har", "proxymanlogv2", "bodylogger" (for .log files), or "multifile"
+
+    Raises:
+        ValueError: If the format cannot be determined from the path
+    """
+    path_str = str(path)
+
+    # Check if it's a directory (multifile archive)
+    if os.path.isdir(path_str):
+        return "multifile"
+
+    # Otherwise, detect from file extension
+    if isinstance(path, Path):
+        ext = path.suffix.lower()
+    else:
+        ext = os.path.splitext(path_str)[1].lower()
+
+    if ext == ".har":
+        return "har"
+    elif ext == ".proxymanlogv2":
+        return "proxymanlogv2"
+    elif ext == ".log":
+        return "bodylogger"
+    else:
+        raise ValueError(
+            f"Unsupported trace file extension: {ext}. "
+            f"Supported formats: .har, .proxymanlogv2, .log, or directory (multifile)"
+        )
 
 
 def open_trace(path: str) -> Trace:
@@ -18,17 +58,18 @@ def open_trace(path: str) -> Trace:
 
     Raises ValueError for unknown/unsupported file formats.
     """
-    if os.path.isdir(path):
+    format = detect_format(path)
+
+    if format == "multifile":
         reader = MultiFileFolderReader(path)
+    elif format == "har":
+        reader = HarReader(path)
+    elif format == "proxymanlogv2":
+        reader = ProxymanLogV2Reader(path)
+    elif format == "bodylogger":
+        reader = BodyLoggerReader(path)
     else:
-        ext = os.path.splitext(path)[1].lower()
-        if ext == ".har":
-            reader = HarReader(path)
-        elif ext == ".proxymanlogv2":
-            reader = ProxymanLogV2Reader(path)
-        elif ext == ".log":
-            reader = BodyLoggerReader(path)
-        else:
-            raise ValueError(f"Unsupported trace file extension: {ext}")
+        # This should never happen if detect_format is correct, but handle it anyway
+        raise ValueError(f"Unsupported trace format: {format}")
 
     return reader.trace
