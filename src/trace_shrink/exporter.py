@@ -5,6 +5,7 @@ Export functionality for converting between trace archive formats.
 from typing import List, Optional
 
 from .writers.har_writer import HarWriter
+from .writers.multifile_writer import MultifileWriter
 from .writers.proxyman_writer import ProxymanWriter
 from .trace import Trace
 from .entries.trace_entry import TraceEntry
@@ -68,3 +69,4 @@ class Exporter:
 
     to_har = _ExportMethod(HarWriter.write)
     to_proxyman = _ExportMethod(ProxymanWriter.write)
+    to_multifile = _ExportMethod(MultifileWriter.write)

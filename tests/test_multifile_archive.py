@@ -2,7 +2,7 @@ import os
 import json
 import tempfile
 
-from trace_shrink import MultiFileFolderReader
+from trace_shrink.readers import MultiFileFolderReader
 
 
 def make_sample(folder, index=1, body=b"hello world", annotations=None):
@@ -64,6 +64,36 @@ def test_multifile_archive_annotation_names():
         assert "digest" in entries[1].annotations
         assert entries[1].annotations["digest"] == "d2"
         assert "request_2.digest" not in entries[1].annotations
+
+
+def test_multifile_archive_annotation_names_zero_padded_index():
+    """Ensure annotations are parsed correctly for request_000001.*.txt filenames."""
+    with tempfile.TemporaryDirectory() as td:
+        # Create a single entry with a zero-padded index
+        meta = {
+            "timestamp": "2026-01-11T10:00:00Z",
+            "request": {"url": "http://example.com/", "method": "GET", "headers": {}},
+            "response": {"status_code": 200, "headers": {"Content-Type": "text/plain"}},
+            "elapsed_ms": 1,
+        }
+        meta_path = os.path.join(td, "request_000001.meta.json")
+        with open(meta_path, "w") as f:
+            json.dump(meta, f)
+
+        body_path = os.path.join(td, "request_000001.body")
+        with open(body_path, "wb") as f:
+            f.write(b"abc")
+
+        ann_path = os.path.join(td, "request_000001.digest.txt")
+        with open(ann_path, "w") as f:
+            f.write("d1")
+
+        arch = MultiFileFolderReader(td)
+        entries = list(arch.trace)
+        assert len(entries) == 1
+        assert "digest" in entries[0].annotations
+        assert entries[0].annotations["digest"] == "d1"
+        assert "request_000001.digest" not in entries[0].annotations
 
 
 def test_multifile_archive_content_type_from_headers():

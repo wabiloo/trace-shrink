@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -33,6 +34,9 @@ class MultiFileTraceEntry(TraceEntry):
         self._exchange = exchange
         self._body_bytes = body_bytes
         annotations_dict = annotations or {}
+
+        comment = exchange.get("comment")
+        highlight = exchange.get("highlight")
 
         # Parse request
         request_data = exchange.get("request", {})
@@ -119,7 +123,7 @@ class MultiFileTraceEntry(TraceEntry):
         )
 
         # Initialize TraceEntry
-        # Filter out comment and highlight from annotations dict (they're handled separately)
+        # Filter out comment and highlight from annotations dict (handled separately)
         filtered_annotations = {
             k: v
             for k, v in annotations_dict.items()
@@ -131,8 +135,8 @@ class MultiFileTraceEntry(TraceEntry):
             request=request,
             response=response,
             timeline=timeline,
-            comment=annotations_dict.get("comment"),
-            highlight=annotations_dict.get("highlight"),
+            comment=comment,
+            highlight=highlight,
             annotations=filtered_annotations,
         )
 
@@ -164,16 +168,11 @@ class MultiFileTraceEntry(TraceEntry):
                     ann_path = Path(p)
                     with ann_path.open("r") as af:
                         basename = ann_path.name
-                        # Remove request_{index}. prefix and .txt suffix
+                        # Extract annotation name from both padded and unpadded filenames.
                         # e.g., request_1.digest.txt -> digest
-                        prefix = f"request_{index}."
-                        if basename.startswith(prefix) and basename.endswith(".txt"):
-                            ann_name = basename[
-                                len(prefix) : -4
-                            ]  # Remove prefix and .txt
-                        else:
-                            # Fallback: just remove .txt if pattern doesn't match
-                            ann_name = basename.replace(".txt", "")
+                        # e.g., request_000001.digest.txt -> digest
+                        m = re.match(r"^request_\d+\.(.+)\.txt$", basename)
+                        ann_name = m.group(1) if m else basename.replace(".txt", "")
                         ann[ann_name] = af.read()
                 except Exception:
                     pass

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from ..entries.requests_entry import RequestsResponseTraceEntry
 from ..entries.trace_entry import TraceEntry
@@ -43,14 +43,19 @@ def entry_to_exchange(entry: TraceEntry) -> Dict:
         "timestamp": timestamp.isoformat().replace("+00:00", "Z"),
         "request": {
             "url": str(entry.request.url),
+            "method": entry.request.method,
             "headers": entry.request.headers,
         },
         "response": {
             "status_code": entry.response.status_code,
             "reason": reason,
             "headers": entry.response.headers,
+            "mime_type": entry.response.mime_type,
+            "content_type": entry.response.content_type,
         },
         "elapsed_ms": elapsed_ms,
+        "comment": entry.comment,
+        "highlight": entry.highlight,
     }
     return exchange
 
@@ -72,6 +77,26 @@ class MultifileWriter:
         """
         self.folder_path = Path(folder)
         self.folder_path.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def write(entries: List[TraceEntry], output_path: str) -> None:
+        """Write a list of TraceEntry objects to a multifile folder.
+
+        Args:
+            entries: List of TraceEntry objects to export.
+            output_path: Folder path where multifile artifacts will be written.
+
+        Raises:
+            IOError: If the folder cannot be created or files cannot be written.
+        """
+        try:
+            writer = MultifileWriter(output_path)
+            for index, entry in enumerate(entries):
+                writer.add_entry(entry, index=index)
+        except Exception as e:
+            raise IOError(
+                f"Failed to write multifile archive to {output_path}: {e}"
+            ) from e
 
     def add_entry(
         self,
@@ -110,10 +135,14 @@ class MultifileWriter:
             body = entry.response.body
             body_bytes = body._get_decoded_body()
 
-        if body_bytes is not None:
-            body_path = self.folder_path / f"{basename}.body{extension}"
-            with body_path.open("wb") as bf:
-                bf.write(body_bytes)
+        # Always write a body file, even if empty. This makes the multifile
+        # folder self-consistent and easier to round-trip.
+        if body_bytes is None:
+            body_bytes = b""
+
+        body_path = self.folder_path / f"{basename}.body{extension}"
+        with body_path.open("wb") as bf:
+            bf.write(body_bytes)
 
         # Write annotations
         for name, text in entry.annotations.items():

@@ -127,6 +127,46 @@ class TestExporterClassMethods:
         finally:
             Path(output_path).unlink()
 
+    def test_to_multifile_class_method_roundtrip(self, har_reader: HarReader):
+        """Test exporting entries to multifile folder using class method."""
+        entries = har_reader.trace.entries[:2]
+
+        # Add some metadata that should survive round-trip
+        entries[0].set_comment("hello")
+        entries[0].set_highlight("red")
+        entries[0].add_annotation("digest", "d1")
+
+        with tempfile.TemporaryDirectory() as td:
+            Exporter.to_multifile(td, entries)
+
+            # Verify files exist (index is enumerate-based, zero-padded)
+            meta0 = Path(td) / "request_000000.meta.json"
+            body0 = list(Path(td).glob("request_000000.body*"))
+            assert meta0.exists()
+            assert len(body0) == 1
+
+            # Verify meta contains method
+            with meta0.open("r", encoding="utf-8") as f:
+                meta_data = json.load(f)
+            assert meta_data["request"]["method"] == entries[0].request.method
+            assert meta_data["comment"] == "hello"
+            assert meta_data["highlight"] == "red"
+
+            # comment/highlight are not stored as annotation files
+            assert not (Path(td) / "request_000000.comment.txt").exists()
+            assert not (Path(td) / "request_000000.highlight.txt").exists()
+
+            # Round-trip read
+            reader = MultiFileFolderReader(td)
+            assert len(reader.trace.entries) == 2
+            rt0 = reader.trace.entries[0]
+            assert str(rt0.request.url) == str(entries[0].request.url)
+            assert rt0.request.method == entries[0].request.method
+            assert rt0.response.status_code == entries[0].response.status_code
+            assert rt0.comment == "hello"
+            assert rt0.highlight == "red"
+            assert rt0.annotations.get("digest") == "d1"
+
 
 class TestExporterInstanceMethods:
     """Tests for Exporter instance methods (with Trace)."""
@@ -192,6 +232,15 @@ class TestExporterInstanceMethods:
 
         finally:
             Path(output_path).unlink()
+
+    def test_to_multifile_instance_method_all_entries(self, har_reader: HarReader):
+        """Test exporting all entries to multifile using instance method."""
+        exporter = Exporter(har_reader.trace)
+
+        with tempfile.TemporaryDirectory() as td:
+            exporter.to_multifile(td)
+            reader = MultiFileFolderReader(td)
+            assert len(reader.trace.entries) == len(har_reader.trace.entries)
 
 
 class TestCrossFormatConversion:
