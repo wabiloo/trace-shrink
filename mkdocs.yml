@@ -36,7 +36,12 @@ extra_css:
 nav:
   - Home: index.md
   - Usage: usage.md
-  - API Reference: api.md
+  - API Reference: 
+    - Overview: api.md
+    - Top-level: api/top-level.md
+    - Entries: api/entries.md
+    - Readers: api/readers.md
+    - Writers: api/writers.md
 watch:
   - src
 
@@ -47,7 +52,7 @@ plugins:
       default_handler: python
       handlers:
         python:
-          paths: [src]
+          paths: [src, src/trace_shrink]
           options:
             inherited_members: true
             docstring_style: google

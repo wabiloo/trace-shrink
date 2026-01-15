@@ -4,7 +4,7 @@ This guide provides a quick overview of how to use `trace-shrink` to analyze you
 
 ## Opening an Archive
 
-The main entry point to the library is the `open_trace` function. It automatically detects the file type (HAR, Proxyman, or Bodylogger) and returns a `Trace` object. The appropriate reader is used internally to load the file, but you work directly with the `Trace` object.
+The main entry point to the library is the `open_trace` function. It automatically detects the file type (HAR, Proxyman, Bodylogger, or multifile directory) and returns a `Trace` object. The appropriate reader is used internally to load the file, but you work directly with the `Trace` object.
 
 ```python
 from trace_shrink import open_trace
@@ -18,6 +18,9 @@ try:
 
     # Or open a Bodylogger file
     bodylogger_trace = open_trace("path/to/your/capture.log")
+
+    # Or open a multifile directory archive
+    multifile_trace = open_trace("path/to/your/capture_folder")
 
     print(f"Successfully opened trace with {len(har_trace)} entries.")
 
@@ -47,21 +50,38 @@ for entry in trace:
 
 ### Filtering
 
-The `filter` method allows you to find specific entries based on criteria like host, URL, or MIME type.
+The `Trace` class provides multiple filtering methods:
 
 ```python
 from trace_shrink import open_trace
 
 trace = open_trace("path/to/your/capture.har")
 
-# Find all entries for a specific host
-api_calls = trace.filter(host="api.example.com")
-print(f"Found {len(api_calls)} entries for api.example.com")
+# General filter method - combine multiple criteria
+api_calls = trace.filter(host="api.example.com", mime_type="application/json")
+print(f"Found {len(api_calls)} JSON API calls")
 
-# Find all HLS manifest files
-hls_manifests = trace.filter(mime_type="application/vnd.apple.mpegurl")
-for manifest in hls_manifests:
-    print(f"Found HLS manifest: {manifest.request.url}")
+# Filter by host
+host_entries = trace.get_entries_by_host("example.com")
+
+# Filter by exact URL
+url_entries = trace.get_entries_for_url("https://example.com/manifest.mpd")
+
+# Filter by URL path
+path_entries = trace.get_entries_by_path("/api/v1/data")
+
+# Filter by partial URL (substring or regex pattern)
+partial_entries = trace.get_entries_for_partial_url("manifest")
+
+# Get specific entry by ID
+entry = trace.get_entry_by_id("entry-123")
+
+# Get multiple entries by IDs
+entries = trace.get_entries_by_ids(["entry-1", "entry-2", "entry-3"])
+
+# Navigate to next/previous entry in a manifest stream
+next_entry = trace.get_next_entry_by_id("entry-123", direction=1, n=1)  # Next
+prev_entry = trace.get_next_entry_by_id("entry-123", direction=-1, n=1)  # Previous
 ```
 
 ## Working with ABR Streams
@@ -73,7 +93,7 @@ for manifest in hls_manifests:
 You can automatically detect all ABR manifest URLs within a capture using the `get_abr_manifest_urls` method. This is more reliable than filtering by MIME type alone as it also inspects URLs.
 
 ```python
-from trace_shrink import open_trace
+from trace_shrink import open_trace, Format
 
 trace = open_trace("path/to/your/capture.har")
 
@@ -85,14 +105,18 @@ for decorated_url in manifest_urls:
     print(f"- URL: {decorated_url.url}")
     print(f"  Format: {decorated_url.format}")
 
-# You can also filter by a specific format
+# You can also filter by a specific format (using string or Format enum)
 hls_urls = trace.get_abr_manifest_urls(format="hls")
+# Or using Format enum:
+# hls_urls = trace.get_abr_manifest_urls(format=Format.HLS)
 print(f"\\nFound {len(hls_urls)} HLS manifest(s).")
 ```
 
-### Extracting a Manifest Stream
+### ManifestStream
 
-Once you have a manifest URL, you can use `get_manifest_stream` to get a `ManifestStream` object. This object contains all the successive requests made to that single manifest URL, allowing you to analyze how an HLS playlist or DASH manifest changed over time.
+A `ManifestStream` represents the sequence of requests made to a single manifest URL in chronological order (for example, repeated GETs of the same HLS playlist). It is useful to analyze manifest refreshes, compare versions over time, and navigate entries by time or position.
+
+You can get a `ManifestStream` from a `Trace` by passing a manifest URL (as `yarl.URL` or string) to `get_manifest_stream()`.
 
 ```python
 from trace_shrink import open_trace
@@ -100,76 +124,119 @@ from trace_shrink import open_trace
 trace = open_trace("path/to/your/capture.har")
 manifest_urls = trace.get_abr_manifest_urls()
 
-if not manifest_urls:
-    print("No ABR manifests found in this capture.")
-else:
-    # Get the stream for the first manifest found
-    main_manifest_url = manifest_urls[0].url
-    print(f"Extracting stream for: {main_manifest_url}\\n")
+if manifest_urls:
+    # Use the first detected manifest URL
+    manifest_stream = trace.get_manifest_stream(manifest_urls[0].url)
+    print(f"Manifest stream contains {len(manifest_stream)} entries")
+    # Iterate chronological entries
+    for entry in manifest_stream:
+        print(entry.timeline.request_start, entry.response.status_code)
 
-    try:
-        manifest_stream = trace.get_manifest_stream(main_manifest_url)
-
-        print(f"Stream has {len(manifest_stream)} entries (refreshes).")
-        print("Timeline of manifest refreshes:")
-        for entry in manifest_stream:
-            # The entries in the stream are the same TraceEntry objects
-            print(f"- Refresh at {entry.timeline.request_start}")
-
-    except ValueError as e:
-        print(f"Error getting manifest stream: {e}")
+    # Find entry near a given time
+    from datetime import datetime, timezone
+    target = datetime(2026, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+    found = manifest_stream.find_entry_by_time(target, position="nearest", tolerance=2.0)
+    if found:
+        print("Closest entry at", found.timeline.request_start)
 ```
 
-## Converting Between Formats
+#### Advanced ManifestStream Operations
 
-You can export entries to different formats using the `Exporter` class. This is particularly useful for converting bodylogger files to HAR format.
+The `ManifestStream` class provides additional methods for time-based navigation:
+
+```python
+from datetime import datetime, timezone, timedelta
+
+# Find entry by time with tolerance
+target_time = datetime(2026, 1, 15, 12, 30, 0, tzinfo=timezone.utc)
+entry = manifest_stream.find_entry_by_time(
+    target_time,
+    position="nearest",  # or "before", "after"
+    tolerance=5.0  # seconds
+)
+
+# Navigate relative to a specific entry
+current_entry = manifest_stream.entries[5]
+next_entry = manifest_stream.get_relative_entry(current_entry, direction=1, n=1)  # Next entry
+previous_entry = manifest_stream.get_relative_entry(current_entry, direction=-1, n=1)  # Previous
+third_next = manifest_stream.get_relative_entry(current_entry, direction=1, n=3)  # Skip ahead 3
+
+# Get the original path of the manifest
+manifest_path = manifest_stream.get_original_path()
+```
+
+### Configuring ABR Detection
+
+You can define what entries are considered to be containing manifests and/or part of a manifest stream, by configuring the ABR detector.
+
+#### Ignore query parameters
+
+If there is a query parameter that appears on some URLs that look like manifest URLs but are not (eg. sidecar files), you can customize which query parameters to ignore:
+
+```python
+from trace_shrink import open_trace
+
+# Open the trace and configure the ABR detector to ignore specific query params
+trace = open_trace("path/to/your/capture.har")
+
+# Treat URLs that do not contain specific query params
+trace.abr_detector.ignore_query_params(["bk-ml", "token"])  # method chains and accepts a string or list
+
+# Now retrieve deduplicated manifest URLs
+manifest_urls = trace.get_abr_manifest_urls()
+for d in manifest_urls:
+    print(d.url, d.format)
+
+# You can then extract a ManifestStream for a chosen manifest URL as usual:
+manifest_stream = trace.get_manifest_stream(manifest_urls[0].url)
+```
+
+## Converting / Exporting
+
+You can export entries from a `Trace` to supported archive formats. The `Exporter`
+class provides convenient instance and class methods for exporting to different formats, in particular HAR or Proxyman Logs v2. 
+
+Use the instance API when you have a `Trace`, or the class methods when you already have a list of `TraceEntry` objects.
 
 ```python
 from trace_shrink import open_trace, Exporter
 
-# Open a bodylogger file
-bodylogger_trace = open_trace("path/to/capture.log")
+# Open any trace file
+trace = open_trace("path/to/capture.log")
 
 # Create an exporter and convert to HAR
-exporter = Exporter(bodylogger_trace)
+exporter = Exporter(trace)
 exporter.to_har("output.har")
 
-print(f"Converted {len(bodylogger_trace)} entries to HAR format.")
+# Or convert to Proxyman format
+exporter.to_proxyman("output.proxymanlogv2")
+
+print(f"Converted {len(trace)} entries.")
 ```
 
-You can also use the provided script:
-
-```bash
-python scripts/bodylogger_to_har.py input.log output.har
-```
-
-## Bodylogger-Specific Features
-
-Bodylogger entries include additional metadata beyond standard HTTP traffic:
+You can also use the `Exporter` as a class method with specific entries:
 
 ```python
-from trace_shrink import BodyLoggerReader
+from trace_shrink import open_trace, Exporter
 
-reader = BodyLoggerReader("path/to/capture.log")
+trace = open_trace("path/to/capture.har")
 
-for entry in reader:
-    print(f"Service ID: {entry.service_id}")
-    print(f"Session ID: {entry.session_id}")
-    print(f"Correlation ID: {entry.correlation_id}")
-    print(f"Log Type: {entry.comment}")  # ORIGIN, MANIPULATED_MANIFEST, etc.
+# Export only specific entries
+filtered_entries = trace.filter(host="api.example.com")
+Exporter.to_har("filtered.har", filtered_entries)
+```
 
-# Filter by log type
-origin_entries = reader.query(log_type="ORIGIN")
-print(f"Found {len(origin_entries)} ORIGIN entries")
 
-# Filter by service ID
-service_entries = reader.query(service_id="your-service-id")
+You can also export to the directory-based multifile format:
 
-# Filter by time range
-from datetime import datetime
-start = datetime(2026, 1, 8, 14, 0)
-end = datetime(2026, 1, 8, 15, 0)
-time_filtered = reader.query(start_time=start, end_time=end)
+```python
+from trace_shrink import open_trace, Exporter
+
+trace = open_trace("path/to/capture.har")
+Exporter(trace).to_multifile("output_folder")
+
+# Or as a class method when you already have a list of entries:
+Exporter.to_multifile("output_folder", trace.entries)
 ```
 
 This covers the most common use cases for getting started with `trace-shrink`. For a detailed list of all available classes and methods, please see the [API Reference](./api.md). 
