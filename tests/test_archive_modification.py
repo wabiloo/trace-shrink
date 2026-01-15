@@ -8,7 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from trace_shrink import HarEntry, HarReader, ProxymanLogV2Entry, ProxymanLogV2Reader
+from trace_shrink.entries import HarEntry
+from trace_shrink.readers import HarReader
+from trace_shrink.entries import ProxymanLogV2Entry
+from trace_shrink.readers import ProxymanLogV2Reader
 
 
 # Sample HAR entry data for testing

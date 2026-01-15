@@ -6,7 +6,8 @@ from typing import Any
 import pytest
 from yarl import URL
 
-from trace_shrink import HarEntry, HarReader
+from trace_shrink.entries import HarEntry
+from trace_shrink.readers import HarReader
 
 # --- Fixtures ---
 

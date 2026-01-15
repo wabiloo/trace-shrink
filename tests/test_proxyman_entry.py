@@ -4,7 +4,8 @@ import pytest
 from yarl import URL
 
 # Updated import to use the new class from the new package structure
-from trace_shrink import ProxymanLogV2Entry, ProxymanLogV2Reader
+from trace_shrink.entries import ProxymanLogV2Entry
+from trace_shrink.readers import ProxymanLogV2Reader
 
 # Sample data (remains largely the same structure for raw input)
 SAMPLE_ENTRY_DATA = {

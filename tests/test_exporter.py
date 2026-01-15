@@ -8,12 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from trace_shrink import (
-    Exporter,
-    HarReader,
-    ProxymanLogV2Reader,
-    Trace,
-)
+from trace_shrink import Exporter, Trace
+from trace_shrink.readers import HarReader, MultiFileFolderReader, ProxymanLogV2Reader
 
 
 @pytest.fixture(scope="module")

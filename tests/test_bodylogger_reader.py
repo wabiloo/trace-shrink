@@ -2,7 +2,9 @@ import pytest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from trace_shrink import BodyLoggerReader, BodyLoggerEntry, open_trace
+from trace_shrink.readers import BodyLoggerReader
+from trace_shrink.entries import BodyLoggerEntry
+from trace_shrink import open_trace
 from trace_shrink import Trace
 
 

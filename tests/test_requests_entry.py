@@ -8,7 +8,9 @@ from types import SimpleNamespace
 
 from yarl import URL
 
-from trace_shrink import Format, MultifileWriter, RequestsResponseTraceEntry
+from trace_shrink import Format
+from trace_shrink.writers import MultifileWriter
+from trace_shrink.entries import RequestsResponseTraceEntry
 
 
 def _fake_response(

@@ -5,7 +5,7 @@ import pytest
 from yarl import URL
 
 # Import the class to test
-from trace_shrink import HarEntry
+from trace_shrink.entries import HarEntry
 
 # Define a representative sample HAR entry dictionary for isolated testing
 # Based loosely on HAR 1.2 spec examples and common fields
@@ -220,7 +220,7 @@ def test_har_str_repr(sample_har_entry):
 def test_har_started_datetime_timezone():
     """Test that startedDateTime always includes timezone (UTC if missing)."""
     from datetime import datetime
-    from trace_shrink import BodyLoggerReader
+    from trace_shrink.readers import BodyLoggerReader
     from pathlib import Path
 
     # Use bodylogger entries which have naive datetime objects (no timezone)
@@ -243,7 +243,7 @@ def test_har_started_datetime_timezone():
 def test_har_started_datetime_requires_request_start():
     """Test that ValueError is raised when request_start is None."""
     from unittest.mock import MagicMock
-    from trace_shrink import TimelineDetails, RequestDetails, ResponseDetails
+    from trace_shrink.entries import TimelineDetails, RequestDetails, ResponseDetails
 
     # Create a mock entry with None request_start
     mock_entry = MagicMock()

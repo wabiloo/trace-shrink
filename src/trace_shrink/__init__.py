@@ -3,49 +3,46 @@ ABR Capture Inspector Library
 """
 
 from .abr import ManifestStream
-from .entries.bodylogger_entry import BodyLoggerEntry
-from .entries.har_entry import HarEntry
-from .entries.multifile_entry import MultiFileTraceEntry
-from .entries.proxyman_entry import ProxymanLogV2Entry
-from .entries.requests_entry import RequestsResponseTraceEntry
-from .entries.trace_entry import (RequestDetails, ResponseBodyDetails,
-                                  ResponseDetails, TimelineDetails, TraceEntry)
 from .exporter import Exporter
 from .open_trace import detect_format, open_trace
-from .readers.bodylogger_reader import BodyLoggerReader
-from .readers.har_reader import HarReader
-from .readers.multifile_reader import MultiFileFolderReader
-from .readers.proxyman_log_reader import ProxymanLogV2Reader
 from .trace import DecoratedUrl, Trace
 from .utils.formats import Format, MimeType
-from .writers.har_writer import HarWriter
-from .writers.multifile_writer import MultifileWriter
-from .writers.proxyman_writer import ProxymanWriter
+
+# Entries/readers/writers are intentionally not imported here. Use
+# `from trace_shrink.entries import ...`, `trace_shrink.readers`, or
+# `trace_shrink.writers` to access those symbols. This keeps the top-level
+# namespace small and avoids eager imports.
 
 __all__ = [
-    "TraceEntry",
-    "RequestDetails",
-    "ResponseDetails",
-    "ResponseBodyDetails",
-    "TimelineDetails",
-    "RequestsResponseTraceEntry",
-    "BodyLoggerReader",  # Advanced use cases - prefer open_trace() for most users
-    "BodyLoggerEntry",
-    "ProxymanLogV2Reader",  # Advanced use cases - prefer open_trace() for most users
-    "ProxymanLogV2Entry",
-    "ProxymanWriter",
-    "HarReader",  # Advanced use cases - prefer open_trace() for most users
-    "HarEntry",
-    "HarWriter",
     "ManifestStream",
     "open_trace",
     "detect_format",
     "Exporter",
     "Trace",
-    "MultiFileTraceEntry",
-    "MultiFileFolderReader",  # Advanced use cases - prefer open_trace() for most users
     "Format",
     "MimeType",
     "DecoratedUrl",
-    "MultifileWriter",
 ]
+
+# Keep lazy access to subpackages (so users can import trace_shrink.entries)
+# but do not expose them as top-level names in __all__.
+_subpackages = {
+    "entries": "trace_shrink.entries",
+    "readers": "trace_shrink.readers",
+    "writers": "trace_shrink.writers",
+}
+
+def __getattr__(name: str):
+    # Lazy import subpackages on attribute access (PEP 562)
+    if name in _subpackages:
+        import importlib
+
+        mod = importlib.import_module(_subpackages[name])
+        globals()[name] = mod
+        return mod
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    # Include lazy subpackages in dir() so completions and indexers see them
+    return sorted(list(globals().keys()) + list(_subpackages.keys()))

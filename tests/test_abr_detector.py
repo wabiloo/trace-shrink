@@ -6,13 +6,11 @@ import yarl
 from trace_shrink import (
     DecoratedUrl,
     Format,
-    RequestDetails,
-    ResponseDetails,
     Trace,
-    TraceEntry,
 )
+from trace_shrink.entries import TraceEntry, RequestDetails, ResponseDetails
 from trace_shrink.abr import AbrDetector
-
+from trace_shrink.entries import TraceEntry, RequestDetails, ResponseDetails
 
 def create_mock_entry(url_str: str, mime_type: str, entry_id: str = None) -> TraceEntry:
     entry = MagicMock(spec=TraceEntry)
