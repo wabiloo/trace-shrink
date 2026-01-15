@@ -60,7 +60,7 @@ def entry_to_exchange(entry: TraceEntry) -> Dict:
     return exchange
 
 
-class MultifileWriter:
+class MultiFileWriter:
     """Writer for multifile trace format.
 
     Writes trace entries to a folder with the following structure:
@@ -70,7 +70,7 @@ class MultifileWriter:
     """
 
     def __init__(self, folder: str | Path):
-        """Initialize the MultifileWriter.
+        """Initialize the MultiFileWriter.
 
         Args:
             folder: Path to the folder where files will be written
@@ -90,7 +90,7 @@ class MultifileWriter:
             IOError: If the folder cannot be created or files cannot be written.
         """
         try:
-            writer = MultifileWriter(output_path)
+            writer = MultiFileWriter(output_path)
             for index, entry in enumerate(entries):
                 writer.add_entry(entry, index=index)
         except Exception as e:

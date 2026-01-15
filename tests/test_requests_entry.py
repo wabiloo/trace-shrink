@@ -9,8 +9,8 @@ from types import SimpleNamespace
 from yarl import URL
 
 from trace_shrink import Format
-from trace_shrink.writers import MultifileWriter
 from trace_shrink.entries import RequestsResponseTraceEntry
+from trace_shrink.writers import MultiFileWriter
 
 
 def _fake_response(
@@ -134,13 +134,13 @@ def test_requests_response_trace_entry_mutations():
 
 
 def test_multifile_writer_class():
-    """Test MultifileWriter class."""
+    """Test MultiFileWriter class."""
     response = _fake_response(body="test content")
     entry = RequestsResponseTraceEntry(response, index=1)
     entry.add_annotation("digest", "test-digest")
 
     with tempfile.TemporaryDirectory() as td:
-        writer = MultifileWriter(td)
+        writer = MultiFileWriter(td)
         writer.add_entry(entry, index=42)
 
         # Check files exist with zero-padded index
@@ -182,7 +182,7 @@ def test_multifile_writer_extension_from_url():
     entry = RequestsResponseTraceEntry(response, index=1)
 
     with tempfile.TemporaryDirectory() as td:
-        writer = MultifileWriter(td)
+        writer = MultiFileWriter(td)
         writer.add_entry(entry, index=1)
 
         # Extension should come from URL (.mpd)
@@ -200,7 +200,7 @@ def test_multifile_writer_extension_prefers_content_type():
     entry = RequestsResponseTraceEntry(response, index=1)
 
     with tempfile.TemporaryDirectory() as td:
-        writer = MultifileWriter(td)
+        writer = MultiFileWriter(td)
         writer.add_entry(entry, index=1)
 
         # Extension should come from content-type (.m3u8), not URL (.mpd)
