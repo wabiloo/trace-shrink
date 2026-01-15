@@ -5,7 +5,7 @@ class AbrDetector:
     """Configuration for ABR manifest detection."""
 
     def __init__(self):
-        self._ignore_query_params: List[str] = ["bk-ml"]
+        self._ignore_query_params: List[str] = []
 
     def ignore_query_params(self, params: Union[str, List[str]]) -> "AbrDetector":
         """

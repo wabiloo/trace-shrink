@@ -28,7 +28,7 @@ def create_mock_entry(url_str: str, mime_type: str, entry_id: str = None) -> Tra
 class TestAbrDetector:
     def test_init_default_ignore_params(self):
         detector = AbrDetector()
-        assert detector.get_ignored_query_params() == ["bk-ml"]
+        assert detector.get_ignored_query_params() == []
 
     def test_ignore_query_params_single_string(self):
         detector = AbrDetector()
@@ -50,12 +50,6 @@ class TestAbrDetector:
         detector.ignore_query_params(["param2", "param3"])
         assert detector.get_ignored_query_params() == ["param2", "param3"]
 
-    def test_get_ignored_query_params_returns_copy(self):
-        detector = AbrDetector()
-        params = detector.get_ignored_query_params()
-        params.append("new-param")  # Modify returned list
-        assert detector.get_ignored_query_params() == ["bk-ml"]  # Original unchanged
-
     def test_method_chaining(self):
         detector = AbrDetector()
         result = detector.ignore_query_params(["param1", "param2"])
@@ -67,23 +61,6 @@ class TestTraceAbrDetectorIntegration:
         trace = Trace(entries=[])
         assert hasattr(trace, "abr_detector")
         assert isinstance(trace.abr_detector, AbrDetector)
-
-    def test_default_ignore_bk_ml_parameter(self):
-        """Test that bk-ml parameter is ignored by default."""
-        manifest_url = yarl.URL("http://example.com/manifest.mpd")
-        manifest_with_bk_ml = yarl.URL("http://example.com/manifest.mpd?bk-ml=1")
-        
-        entries = [
-            create_mock_entry(str(manifest_url), "application/dash+xml"),
-            create_mock_entry(str(manifest_with_bk_ml), "application/dash+xml"),
-            create_mock_entry("http://example.com/video.mp4", "video/mp4"),
-        ]
-        trace = Trace(entries=entries)
-        
-        # Should only return the manifest without bk-ml parameter
-        result = trace.get_abr_manifest_urls()
-        assert len(result) == 1
-        assert result[0].url == manifest_url
 
     def test_custom_ignore_query_params(self):
         """Test ignoring custom query parameters."""
@@ -160,13 +137,14 @@ class TestTraceAbrDetectorIntegration:
     def test_parameter_with_no_value(self):
         """Test that parameter presence is checked even without value."""
         manifest_url = yarl.URL("http://example.com/manifest.mpd")
-        manifest_with_param = yarl.URL("http://example.com/manifest.mpd?bk-ml")
+        manifest_with_param = yarl.URL("http://example.com/manifest.mpd?ding")
         
         entries = [
             create_mock_entry(str(manifest_url), "application/dash+xml"),
             create_mock_entry(str(manifest_with_param), "application/dash+xml"),
         ]
         trace = Trace(entries=entries)
+        trace.abr_detector.ignore_query_params("ding")
         
         result = trace.get_abr_manifest_urls()
         assert len(result) == 1
