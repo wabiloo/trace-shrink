@@ -22,6 +22,9 @@ try:
     # Or open a multifile directory archive
     multifile_trace = open_trace("path/to/your/capture_folder")
 
+    # Or open a .barc/.zip archive containing multifile format
+    archive_trace = open_trace("path/to/your/capture.barc")
+
     print(f"Successfully opened trace with {len(har_trace)} entries.")
 
 except FileNotFoundError:
@@ -238,5 +241,7 @@ Exporter(trace).to_multifile("output_folder")
 # Or as a class method when you already have a list of entries:
 Exporter.to_multifile("output_folder", trace.entries)
 ```
+
+**Note**: The multifile format creates files in a folder structure. Files can be at the root level or within a `requests/` subdirectory. You can then archive this folder as a .barc or .zip file for easier distribution while maintaining compatibility with the reader.
 
 This covers the most common use cases for getting started with `trace-shrink`. For a detailed list of all available classes and methods, please see the [API Reference](./api.md). 

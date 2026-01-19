@@ -36,17 +36,19 @@ def detect_format(path: Union[str, Path]) -> str:
         return "proxymanlogv2"
     elif ext == ".log":
         return "bodylogger"
+    elif ext in (".barc", ".zip"):
+        return "multifile"
     else:
         raise ValueError(
             f"Unsupported trace file extension: {ext}. "
-            f"Supported formats: .har, .proxymanlogv2, .log, or directory (multifile)"
+            f"Supported formats: .har, .proxymanlogv2, .log, .barc, .zip, or directory (multifile)"
         )
 
 
 def open_trace(path: str) -> Trace:
     """
     Factory function to open a trace file and return a Trace object.
-    Supports .har, .proxymanlogv2, and .log (bodylogger) files.
+    Supports .har, .proxymanlogv2, .log (bodylogger), .barc, .zip files, and directories (multifile).
 
     The appropriate reader is used internally to load the file, but the returned
     Trace object is the primary interface for accessing entries, filtering them,
