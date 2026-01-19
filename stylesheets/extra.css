@@ -1,0 +1,26 @@
+/* Custom styles for mkdocstrings documentation */
+
+
+div.doc-contents .doc-function-name,
+div.doc-contents .doc-attribute-name,
+div.doc-contents .doc-class-name {
+    /* background-color: red !important; */
+    text-transform: none !important;
+}
+
+div.doc-contents h4 {
+    font-size: 1rem !important;
+    font-weight: bold !important;
+    margin-top: 3rem !important;
+    text-transform: uppercase
+}
+
+div.doc-contents h5 {
+    font-size: 0.9rem !important;
+    margin: 2rem 0 0 0;
+}
+
+div.doc-contents .doc-function .doc-contents {
+    padding-left: 1rem !important;
+    border-left: 2px solid var(--md-typeset-table-color);
+}
